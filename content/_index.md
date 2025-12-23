@@ -12,8 +12,8 @@ Here you will find documentation for the live microservices platform I built.
 ## Project Links
 * [Live Dashboard](https://monitor.sanjeevsethi.in)
 * [Architecture Documentation](/architecture)
-* [GitHub: Infrastructure](https://github.com/sanjeevsethi/sre-platform-infra)
-* [GitHub: Application](https://github.com/sanjeevsethi/sre-platform-app)
+* [GitHub: Infrastructure](https://github.com/sanjeevliv/sre-platform-infra)
+* [GitHub: Application](https://github.com/sanjeevliv/sre-platform-app)
 
 ## Status
 * **Platform**: Live

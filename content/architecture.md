@@ -1,19 +1,21 @@
 ---
 title: "System Architecture"
-date: 2025-12-21T12:00:00+05:30
+date: 2025-12-23T12:00:00+05:30
 draft: false
+layout: "architecture"
 ---
 
-# Platform Architecture
+# SRE Platform Architecture
 
-The SRE Portfolio platform runs on a production-grade Kubernetes cluster provisioned via Terraform on Google Cloud Platform. This page details the infrastructure, deployment pipeline, and observability stack.
+The SRE Portfolio platform runs on a **production-grade Kubernetes cluster** provisioned via Terraform on Google Cloud Platform (GCP). This page details the infrastructure design, request lifecycle, deployment pipeline, and security hardening measures.
+
+---
 
 ## 1. Cloud Infrastructure (GKE)
 
-The foundation is a **GKE Autopilot** cluster running in a custom VPC. All infrastructure is managed as code (IaC) using Terraform.
+The foundation is [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview), chosen for its secure-by-default configuration and managed operational overhead.
 
-### Architecture Diagram
-
+### Infrastructure Diagram
 ```mermaid
 graph TB
     subgraph GCP["Google Cloud Platform (Asia-South1)"]
@@ -34,16 +36,65 @@ graph TB
     end
 ```
 
-### Key Decisions
-* **GKE Autopilot**: Selected for zero-overhead node management and built-in security best practices.
-* **Terraform State**: Stored remotely in GCS buckets for team collaboration and lock safety.
-* **Network**: Complete VPC isolation with minimal public exposure.
+### Key Technical Decisions
+*   **IaC (Infrastructure as Code)**: All resources (VPC, DNS, GKE) are defined in **Terraform**, ensuring reproducibility and preventing configuration drift.
+*   **GKE Autopilot**: Automatically manages node provisioning and scaling, allowing focus on application SLOs rather than cluster upgrades.
+*   **Network Isolation**: Custom VPC with private subnets. No default networks are used.
 
 ---
 
-## 2. CI/CD Pipeline
+## 2. Request Lifecycle & Observability
 
-We follow GitOps principles where possible. Deployment is automated via GitHub Actions.
+How a user request travels through the system and is observed.
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Ingress
+    participant API as API Service
+    participant Redis
+    participant Worker as Worker Service
+    participant OTel as OpenTelemetry
+
+    User->>Ingress: HTTPS Request /process
+    Ingress->>API: Forward (HTTP)
+    API->>OTel: Start Trace Span
+    API->>Redis: Enqueue Job
+    Redis-->>API: Job ID
+    API-->>User: 202 Accepted
+    
+    loop Async Processing
+        Worker->>Redis: Pop Job
+        Worker->>Worker: Process Task
+        Worker->>OTel: End Trace Span
+    end
+```
+
+### Observability Stack
+*   **Metrics**: Google Managed Prometheus scrapes application metrics (latency, error rates).
+*   **Visualization**: **Grafana** dashboards display Golden Signals (Saturation, Traffic, Errors, Latency).
+*   **Tracing**: **OpenTelemetry** correlates requests across microservices. Every log line includes `trace_id`.
+
+---
+
+## 3. Security & Hardening
+
+Security is "baked in" from the start, not added as an afterthought.
+
+### 🛡️ Kubernetes Security
+*   **Network Policies**: A "Default Deny" policy blocks all unauthorized traffic. Specific policies allow the API to talk to Redis and Worker to talk to DNS.
+*   **Least Privilege**: Containers run as **non-root users** (UID 1000) with dropped Linux capabilities (`ALL` dropped).
+*   **Read-Only Filesystems**: Attackers cannot modify application code at runtime.
+
+### 🔒 CI/CD Security
+*   **Distroless Images**: Docker images use `gcr.io/distroless/static`, containing only the binary and no OS shell, reducing the attack surface.
+*   **Signed Commits**: All deployment triggers are verified via Git SHA.
+
+---
+
+## 4. CI/CD Pipeline
+
+We follow **GitOps** principles. Changes are deployed automatically via GitHub Actions.
 
 ```mermaid
 graph LR
@@ -62,18 +113,8 @@ graph LR
     end
 ```
 
-### Pipeline Steps
-1. **Test**: Runs `go test ./...` and `go vet` to ensure code quality.
-2. **Build**: Builds multi-stage Docker images (optimized using distroless base).
-3. **Publish**: Pushes tagged images to Google Artifact Registry.
-4. **Deploy**: Uses Helm to upgrade the application on GKE, ensuring zero-downtime rolling updates.
-
----
-
-## 3. Observability Stack
-
-The platform implements the three pillars of observability:
-
-* **Metrics**: Prometheus (Google Managed) scrapes endpoints. Grafana visualizes Golden Signals (Latency, Traffic, Errors, Saturation).
-* **Logs**: Structured JSON logging (Zerolog) with correlation IDs.
-* **Traces**: OpenTelemetry (OTel) instrumentation for end-to-end request tracing.
+### Automation Steps
+1.  **Test**: Runs `go test ./...` and `go vet` to ensure strict Go standards.
+2.  **Build**: Multi-stage Docker builds produce tiny, secure binaries.
+3.  **Publish**: Images pushed to Artifact Registry with immutable tags (Git SHA).
+4.  **Deploy**: Helm upgrades the release with zero-downtime rolling updates.
