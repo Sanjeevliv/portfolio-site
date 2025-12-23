@@ -23,6 +23,6 @@ Honestly? I want to understand how large-scale systems stay up. Not just the the
 
 ### 📫 Connect
 
-*   **Email**: sanjeev.211ee142@nitk.edu.in
-*   [GitHub](https://github.com/Sanjeevliv)
+*   [Email](mailto:sanjeev.211ee142@nitk.edu.in)
+*   [GitHub](https://github.com/sanjeevliv)
 *   [LinkedIn](https://linkedin.com/in/sanjeevliv)
