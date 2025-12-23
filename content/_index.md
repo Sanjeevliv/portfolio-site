@@ -16,7 +16,7 @@ Here you will find documentation for the live microservices platform I built.
 - Everything deployed via Terraform and GitHub Actions
 
 ## Project Links
-* [Live Dashboard](http://34.47.220.97:3000)
+* [Live Dashboard](http://monitor.sanjeevsethi.in:3000)
 * [Architecture Documentation](/architecture)
 * [GitHub: Infrastructure](https://github.com/sanjeevliv/sre-platform-infra)
 * [GitHub: Application](https://github.com/sanjeevliv/sre-platform-app)
