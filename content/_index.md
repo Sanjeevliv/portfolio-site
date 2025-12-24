@@ -8,7 +8,7 @@ draft: false
 
 I'm a B.Tech student at NIT Karnataka, Surathkal. I built this microservices platform on Google Cloud to learn Site Reliability Engineering the hard way—by actually doing it.
 
-I'm also exploring Multipath TCP for my research.
+I'm also exploring Multipath TCP for my Major Project.
 
 ---
 
