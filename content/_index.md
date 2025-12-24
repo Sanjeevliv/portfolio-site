@@ -43,6 +43,6 @@ I'm also exploring Multipath TCP for my research.
 
 ## Connect
 
-- [Email](sanjeev.211ee142@nitk.edu.in)
+- Email: `sanjeev.211ee142@nitk.edu.in`
 - [GitHub](https://github.com/sanjeevliv)
 - [LinkedIn](https://linkedin.com/in/sanjeevliv)
