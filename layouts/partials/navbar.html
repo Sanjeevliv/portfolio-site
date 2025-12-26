@@ -1,0 +1,101 @@
+{{/* Override Docsy's navbar to add theme toggle */}}
+<nav class="td-navbar js-navbar-scroll navbar-expand navbar-dark flex-column flex-md-row td-navbar"
+    aria-label="Main navigation">
+    <div class="container-fluid flex-row d-flex justify-content-between align-items-center">
+        {{/* Brand/logo */}}
+        <a class="navbar-brand" href="{{ .Site.Home.RelPermalink }}">
+            <span class="navbar-brand__name">{{ .Site.Title }}</span>
+        </a>
+
+        {{/* Navigation links */}}
+        <div class="td-navbar-nav-scroll ms-auto" id="main_navbar">
+            <ul class="navbar-nav">
+                {{ $p := . }}
+                {{ range .Site.Menus.main }}
+                {{- $active := or ($p.IsMenuCurrent "main" .) ($p.HasMenuCurrent "main" .) }}
+                <li class="nav-item">
+                    <a class="nav-link{{ if $active }} active{{ end }}" href="{{ .URL | relURL }}">
+                        {{ .Name }}
+                    </a>
+                </li>
+                {{ end }}
+
+                {{/* Theme toggle button */}}
+                <li class="nav-item d-flex align-items-center ms-3">
+                    <button id="theme-toggle-nav" class="btn btn-link nav-link p-0" aria-label="Toggle theme"
+                        title="Toggle dark/light mode"
+                        style="font-size: 1.5rem; text-decoration: none; border: none; background: none; cursor: pointer;">
+                        <span id="nav-icon-dark">🗿</span>
+                        <span id="nav-icon-light" style="display: none;">🤡</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<script>
+    (function () {
+        // Apply theme immediately (before DOMContentLoaded to prevent flash)
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggle = document.getElementById('theme-toggle-nav');
+            const iconDark = document.getElementById('nav-icon-dark');
+            const iconLight = document.getElementById('nav-icon-light');
+
+            applyTheme(savedTheme);
+
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    const current = localStorage.getItem('theme') || 'dark';
+                    const next = current === 'dark' ? 'light' : 'dark';
+                    applyTheme(next);
+                    localStorage.setItem('theme', next);
+                });
+            }
+
+            function applyTheme(theme) {
+                document.documentElement.setAttribute('data-bs-theme', theme);
+
+                if (theme === 'dark') {
+                    if (iconDark) iconDark.style.display = 'inline';
+                    if (iconLight) iconLight.style.display = 'none';
+                    document.body.style.setProperty('background-color', '#0d1117', 'important');
+                    document.body.style.setProperty('color', '#e6edf3', 'important');
+                } else {
+                    if (iconDark) iconDark.style.display = 'none';
+                    if (iconLight) iconLight.style.display = 'inline';
+                    document.body.style.setProperty('background-color', '#ffffff', 'important');
+                    document.body.style.setProperty('color', '#24292f', 'important');
+                }
+
+                // Apply to all major containers
+                document.querySelectorAll('.td-main, .td-content, .td-sidebar, .td-outer, main, article').forEach(el => {
+                    if (theme === 'light') {
+                        el.style.setProperty('background-color', '#ffffff', 'important');
+                        el.style.setProperty('color', '#24292f', 'important');
+                    } else {
+                        el.style.removeProperty('background-color');
+                        el.style.removeProperty('color');
+                    }
+                });
+
+                // Update navbar for light mode
+                const navbar = document.querySelector('.td-navbar');
+                if (navbar) {
+                    if (theme === 'light') {
+                        navbar.style.setProperty('background-color', '#f6f8fa', 'important');
+                        navbar.classList.remove('navbar-dark');
+                        navbar.classList.add('navbar-light');
+                    } else {
+                        navbar.style.removeProperty('background-color');
+                        navbar.classList.remove('navbar-light');
+                        navbar.classList.add('navbar-dark');
+                    }
+                }
+            }
+        });
+    })();
+</script>
