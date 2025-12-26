@@ -1,21 +1,19 @@
 ---
 title: "System Architecture"
-date: 2025-12-23T12:00:00+05:30
-draft: false
-layout: "architecture"
+linkTitle: "Architecture"
+weight: 1
+description: >
+  Detailed overview of the SRE Platform infrastructure, including GKE cluster, observability stack, and CI/CD pipeline.
 ---
-
-# SRE Platform Architecture
 
 The SRE Portfolio platform runs on a **production-grade Kubernetes cluster** provisioned via Terraform on Google Cloud Platform (GCP). This page details the infrastructure design, request lifecycle, deployment pipeline, and security hardening measures.
-
----
 
 ## 1. Cloud Infrastructure (GKE)
 
 The foundation is [GKE Autopilot](https://cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview), chosen for its secure-by-default configuration and managed operational overhead.
 
 ### Infrastructure Diagram
+
 ```mermaid
 graph TB
     subgraph GCP["Google Cloud Platform (Asia-South1)"]
@@ -37,6 +35,7 @@ graph TB
 ```
 
 ### Key Technical Decisions
+
 *   **IaC (Infrastructure as Code)**: All resources (VPC, DNS, GKE) are defined in **Terraform**, ensuring reproducibility and preventing configuration drift.
 *   **GKE Autopilot**: Automatically manages node provisioning and scaling, allowing focus on application SLOs rather than cluster upgrades.
 *   **Network Isolation**: Custom VPC with private subnets. No default networks are used.
@@ -71,6 +70,7 @@ sequenceDiagram
 ```
 
 ### Observability Stack
+
 *   **Metrics**: Google Managed Prometheus scrapes application metrics (latency, error rates).
 *   **Visualization**: **Grafana** dashboards display Golden Signals (Saturation, Traffic, Errors, Latency).
 *   **Tracing**: **OpenTelemetry** correlates requests across microservices. Every log line includes `trace_id`.
@@ -82,11 +82,13 @@ sequenceDiagram
 Security is "baked in" from the start, not added as an afterthought.
 
 ### 🛡️ Kubernetes Security
+
 *   **Network Policies**: A "Default Deny" policy blocks all unauthorized traffic. Specific policies allow the API to talk to Redis and Worker to talk to DNS.
 *   **Least Privilege**: Containers run as **non-root users** (UID 1000) with dropped Linux capabilities (`ALL` dropped).
 *   **Read-Only Filesystems**: Attackers cannot modify application code at runtime.
 
 ### 🔒 CI/CD Security
+
 *   **Distroless Images**: Docker images use `gcr.io/distroless/static`, containing only the binary and no OS shell, reducing the attack surface.
 *   **Signed Commits**: All deployment triggers are verified via Git SHA.
 
@@ -114,6 +116,7 @@ graph LR
 ```
 
 ### Automation Steps
+
 1.  **Test**: Runs `go test ./...` and `go vet` to ensure strict Go standards.
 2.  **Build**: Multi-stage Docker builds produce tiny, secure binaries.
 3.  **Publish**: Images pushed to Artifact Registry with immutable tags (Git SHA).

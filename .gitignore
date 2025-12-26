@@ -6,3 +6,4 @@ hugo_stats.json
 
 # OS
 .DS_Store
+node_modules/
