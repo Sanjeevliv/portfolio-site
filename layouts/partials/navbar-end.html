@@ -1,0 +1,44 @@
+<!-- Add theme toggle to navbar -->
+<li class="nav-item d-flex align-items-center">
+    <button id="theme-toggle-nav" class="btn btn-link nav-link px-2 fs-4" aria-label="Toggle theme"
+        title="Toggle dark/light mode" style="text-decoration: none; border: none; background: none;">
+        <span id="nav-icon-dark" class="theme-icon">🗿</span>
+        <span id="nav-icon-light" class="theme-icon" style="display: none;">🃏</span>
+    </button>
+</li>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const toggle = document.getElementById('theme-toggle-nav');
+        const iconDark = document.getElementById('nav-icon-dark');
+        const iconLight = document.getElementById('nav-icon-light');
+        const html = document.documentElement;
+
+        // Get saved theme or default to dark
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+
+        toggle.addEventListener('click', function () {
+            const current = localStorage.getItem('theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('theme', next);
+        });
+
+        function applyTheme(theme) {
+            html.setAttribute('data-bs-theme', theme);
+
+            if (theme === 'dark') {
+                iconDark.style.display = 'inline';
+                iconLight.style.display = 'none';
+                document.body.style.backgroundColor = '#0d1117';
+                document.body.style.color = '#e6edf3';
+            } else {
+                iconDark.style.display = 'none';
+                iconLight.style.display = 'inline';
+                document.body.style.backgroundColor = '#ffffff';
+                document.body.style.color = '#1f2328';
+            }
+        }
+    });
+</script>
