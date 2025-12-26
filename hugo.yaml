@@ -20,15 +20,21 @@ params:
     breadcrumb_disable: false
     navbar_logo: false
     footer_about_enable: false
+    # Disable right-side doc links
+    readingtime:
+      enable: false
+    feedback:
+      enable: false
+  
+  # Disable page meta links (view source, edit, create issue)
+  github_repo: ''
+  github_project_repo: ''
+  
   
   # Mermaid support (built into Docsy)
   mermaid:
     enable: true
     theme: dark
-  
-  # Social links
-  github_repo: 'https://github.com/sanjeevliv/sre-platform-app'
-  github_project_repo: 'https://github.com/sanjeevliv/sre-platform-infra'
   
   # Footer
   links:
