@@ -1,0 +1,30 @@
+/* Custom styles for SRE Portfolio */
+
+/* Make Mermaid diagrams larger and more readable */
+.mermaid {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.mermaid svg {
+    min-width: 800px;
+    min-height: 400px;
+    max-width: none !important;
+}
+
+/* Increase font size in diagrams */
+.mermaid .nodeLabel,
+.mermaid .edgeLabel,
+.mermaid .cluster-label {
+    font-size: 14px !important;
+}
+
+/* Better spacing for diagram containers */
+pre:has(+ .mermaid),
+.mermaid {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: #1a1a2e;
+    border-radius: 8px;
+}
