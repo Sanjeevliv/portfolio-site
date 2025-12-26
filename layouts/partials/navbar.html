@@ -71,8 +71,9 @@
                     document.body.style.setProperty('color', '#24292f', 'important');
                 }
 
-                // Apply to all major containers
-                document.querySelectorAll('.td-main, .td-content, .td-sidebar, .td-outer, main, article').forEach(el => {
+                // Apply to all major containers including homepage sections
+                const containers = '.td-main, .td-content, .td-sidebar, .td-outer, main, article, .td-cover-block, .td-box, section, .blocks-cover, .blocks-lead, .blocks-section';
+                document.querySelectorAll(containers).forEach(el => {
                     if (theme === 'light') {
                         el.style.setProperty('background-color', '#ffffff', 'important');
                         el.style.setProperty('color', '#24292f', 'important');
@@ -86,14 +87,35 @@
                 const navbar = document.querySelector('.td-navbar');
                 if (navbar) {
                     if (theme === 'light') {
-                        navbar.style.setProperty('background-color', '#f6f8fa', 'important');
+                        navbar.style.setProperty('background-color', '#24292f', 'important');
                         navbar.classList.remove('navbar-dark');
                         navbar.classList.add('navbar-light');
+                        // Make navbar links dark for light mode navbar
+                        navbar.querySelectorAll('.nav-link, .navbar-brand, .navbar-brand__name').forEach(link => {
+                            link.style.setProperty('color', '#ffffff', 'important');
+                        });
                     } else {
                         navbar.style.removeProperty('background-color');
                         navbar.classList.remove('navbar-light');
                         navbar.classList.add('navbar-dark');
+                        navbar.querySelectorAll('.nav-link, .navbar-brand, .navbar-brand__name').forEach(link => {
+                            link.style.removeProperty('color');
+                        });
                     }
+                }
+
+                // Fix links and headings for light mode
+                if (theme === 'light') {
+                    document.querySelectorAll('a:not(.nav-link):not(.navbar-brand), h1, h2, h3, h4, h5, h6').forEach(el => {
+                        el.style.setProperty('color', '#24292f', 'important');
+                    });
+                    document.querySelectorAll('a:not(.nav-link):not(.navbar-brand)').forEach(el => {
+                        el.style.setProperty('color', '#0969da', 'important');
+                    });
+                } else {
+                    document.querySelectorAll('a, h1, h2, h3, h4, h5, h6').forEach(el => {
+                        el.style.removeProperty('color');
+                    });
                 }
             }
         });
