@@ -1,4 +1,54 @@
 baseURL: 'https://sanjeevsethi.in/'
 languageCode: 'en-us'
 title: 'Sanjeev Sethi - SRE Portfolio'
-theme: 'ananke'
+
+# Docsy module
+module:
+  hugoVersion:
+    extended: true
+    min: 0.110.0
+  imports:
+    - path: github.com/google/docsy
+    - path: github.com/google/docsy/dependencies
+
+# Docsy params
+params:
+  # UI customization
+  ui:
+    sidebar_menu_compact: true
+    sidebar_menu_foldable: true
+    breadcrumb_disable: false
+    navbar_logo: false
+    footer_about_enable: false
+  
+  # Mermaid support (built into Docsy)
+  mermaid:
+    enable: true
+    theme: dark
+  
+  # Social links
+  github_repo: 'https://github.com/sanjeevliv/sre-platform-app'
+  github_project_repo: 'https://github.com/sanjeevliv/sre-platform-infra'
+  
+  # Footer
+  links:
+    user:
+      - name: GitHub
+        url: 'https://github.com/sanjeevliv'
+        icon: fab fa-github
+      - name: LinkedIn
+        url: 'https://linkedin.com/in/sanjeevliv'
+        icon: fab fa-linkedin
+
+# Enable taxonomies
+taxonomies:
+  tag: tags
+  category: categories
+
+# Goldmark markdown settings
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    style: dracula
