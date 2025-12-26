@@ -28,3 +28,35 @@ pre:has(+ .mermaid),
     background: #1a1a2e;
     border-radius: 8px;
 }
+
+/* Theme Toggle Button */
+#theme-toggle-nav {
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#theme-toggle-nav:hover {
+    transform: scale(1.2);
+}
+
+.theme-icon {
+    font-size: 1.5rem;
+}
+
+/* Light mode overrides */
+[data-bs-theme="light"] body,
+body.td-light {
+    background-color: #ffffff !important;
+    color: #1f2328 !important;
+}
+
+[data-bs-theme="light"] .td-sidebar,
+body.td-light .td-sidebar {
+    background-color: #f6f8fa !important;
+}
+
+[data-bs-theme="light"] .navbar,
+body.td-light .navbar {
+    background-color: #f6f8fa !important;
+}
