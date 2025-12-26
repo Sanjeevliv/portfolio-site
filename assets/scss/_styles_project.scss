@@ -1,10 +1,170 @@
 /* Custom styles for SRE Portfolio */
 
-/* Make Mermaid diagrams larger and more readable */
+/* ============================================
+   DARK/LIGHT THEME SYSTEM
+   Uses data-bs-theme attribute on <html>
+   This is future-proof - any new page automatically inherits the theme
+   ============================================ */
+
+/* Dark mode (default) */
+:root,
+[data-bs-theme="dark"] {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --link-color: #58a6ff;
+    --border-color: #30363d;
+    --navbar-bg: #161b22;
+    --sidebar-bg: #0d1117;
+    --card-bg: #161b22;
+    --code-bg: #1a1a2e;
+}
+
+/* Light mode */
+[data-bs-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #eaeef2;
+    --text-primary: #24292f;
+    --text-secondary: #57606a;
+    --text-muted: #6e7781;
+    --link-color: #0969da;
+    --border-color: #d0d7de;
+    --navbar-bg: #24292f;
+    --sidebar-bg: #f6f8fa;
+    --card-bg: #ffffff;
+    --code-bg: #f6f8fa;
+}
+
+/* ============================================
+   GLOBAL STYLES (applies to ALL pages)
+   ============================================ */
+
+body {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Main content area */
+.td-main,
+.td-content,
+.td-outer,
+main,
+article {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Sidebar */
+.td-sidebar,
+.td-sidebar-nav,
+.td-sidebar-link {
+    background-color: var(--sidebar-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Navbar - keep dark in both modes for visibility */
+.td-navbar {
+    background-color: var(--navbar-bg) !important;
+}
+
+[data-bs-theme="light"] .td-navbar {
+    background-color: #24292f !important;
+}
+
+[data-bs-theme="light"] .td-navbar .nav-link,
+[data-bs-theme="light"] .td-navbar .navbar-brand,
+[data-bs-theme="light"] .td-navbar .navbar-brand__name {
+    color: #ffffff !important;
+}
+
+/* Links */
+a {
+    color: var(--link-color);
+}
+
+a:hover {
+    color: var(--link-color);
+    opacity: 0.8;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--text-primary) !important;
+}
+
+/* ============================================
+   HOMEPAGE SPECIFIC SECTIONS
+   (Cover blocks, feature cards, etc.)
+   ============================================ */
+
+.td-cover-block,
+.td-box,
+.blocks-cover,
+.blocks-lead,
+.td-cover-block--height-full,
+section[class*="blocks-"] {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Feature cards */
+.blocks-feature,
+.td-box--secondary {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Alternate section backgrounds */
+.td-box--primary {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* ============================================
+   DOCUMENTATION PAGE STYLES
+   ============================================ */
+
+.td-toc,
+.td-content-wrapper {
+    background-color: var(--bg-primary) !important;
+}
+
+/* Code blocks */
+pre,
+code {
+    background-color: var(--code-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Tables */
+table {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+th,
+td {
+    border-color: var(--border-color) !important;
+}
+
+/* Mermaid diagrams */
 .mermaid {
     width: 100%;
     max-width: 100%;
     overflow-x: auto;
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--code-bg) !important;
+    border-radius: 8px;
 }
 
 .mermaid svg {
@@ -13,23 +173,16 @@
     max-width: none !important;
 }
 
-/* Increase font size in diagrams */
 .mermaid .nodeLabel,
 .mermaid .edgeLabel,
 .mermaid .cluster-label {
     font-size: 14px !important;
 }
 
-/* Better spacing for diagram containers */
-pre:has(+ .mermaid),
-.mermaid {
-    margin: 2rem 0;
-    padding: 1rem;
-    background: #1a1a2e;
-    border-radius: 8px;
-}
+/* ============================================
+   THEME TOGGLE BUTTON
+   ============================================ */
 
-/* Theme Toggle Button */
 #theme-toggle-nav {
     font-size: 1.5rem;
     cursor: pointer;
@@ -40,23 +193,42 @@ pre:has(+ .mermaid),
     transform: scale(1.2);
 }
 
-.theme-icon {
-    font-size: 1.5rem;
+/* ============================================
+   BLOG PAGE STYLES
+   ============================================ */
+
+.td-blog,
+.td-blog-posts-list {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
 
-/* Light mode overrides */
-[data-bs-theme="light"] body,
-body.td-light {
-    background-color: #ffffff !important;
-    color: #1f2328 !important;
+/* ============================================
+   FOOTER STYLES
+   ============================================ */
+
+footer,
+.td-footer {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
 }
 
-[data-bs-theme="light"] .td-sidebar,
-body.td-light .td-sidebar {
-    background-color: #f6f8fa !important;
+/* ============================================
+   UTILITY OVERRIDES
+   ============================================ */
+
+/* Remove any hardcoded background colors from Docsy */
+[data-bs-theme="light"] .bg-dark,
+[data-bs-theme="light"] .bg-primary,
+[data-bs-theme="light"] .text-white {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
 
-[data-bs-theme="light"] .navbar,
-body.td-light .navbar {
-    background-color: #f6f8fa !important;
+/* Keep navbar items visible in light mode */
+[data-bs-theme="light"] .td-navbar .bg-dark,
+[data-bs-theme="light"] .td-navbar .bg-primary,
+[data-bs-theme="light"] .td-navbar .text-white {
+    background-color: transparent !important;
+    color: #ffffff !important;
 }
