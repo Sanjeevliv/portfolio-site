@@ -42,15 +42,24 @@ Prometheus metrics, Grafana dashboards, OpenTelemetry tracing
 {{< /blocks/section >}}
 
 
-{{< blocks/section >}}
-## Tech Stack
+{{< blocks/section color="primary" type="row" >}}
 
-| Category | Technologies |
-|----------|--------------|
-| **Languages** | Go, Python, Bash |
-| **Infrastructure** | Kubernetes (GKE), Terraform, Docker |
-| **CI/CD** | GitHub Actions, Helm |
-| **Observability** | Prometheus, Grafana, OpenTelemetry |
+{{% blocks/feature icon="fa-solid fa-code" title="Languages" %}}
+Go • Python • Bash
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-cloud" title="Infrastructure" %}}
+Kubernetes (GKE) • Terraform • Docker
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-gear" title="CI/CD" %}}
+GitHub Actions • Helm
+{{% /blocks/feature %}}
+
+{{% blocks/feature icon="fa-solid fa-chart-bar" title="Observability" %}}
+Prometheus • Grafana • OpenTelemetry
+{{% /blocks/feature %}}
+
 {{< /blocks/section >}}
 
 

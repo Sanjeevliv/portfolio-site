@@ -49,9 +49,6 @@ params:
 # Top navigation menu
 menu:
   main:
-    - name: Documentation
-      weight: 10
-      url: /docs/
     - name: Blogs
       weight: 20
       url: /blog/
