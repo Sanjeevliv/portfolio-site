@@ -36,7 +36,7 @@
 
 <script>
     (function () {
-        // Apply theme immediately (before DOMContentLoaded to prevent flash)
+        // Apply theme immediately to prevent flash
         const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
 
@@ -45,77 +45,28 @@
             const iconDark = document.getElementById('nav-icon-dark');
             const iconLight = document.getElementById('nav-icon-light');
 
-            applyTheme(savedTheme);
+            // Set initial icon state
+            updateIcons(savedTheme);
 
             if (toggle) {
                 toggle.addEventListener('click', function () {
                     const current = localStorage.getItem('theme') || 'dark';
                     const next = current === 'dark' ? 'light' : 'dark';
-                    applyTheme(next);
+
+                    // Update theme attribute (CSS handles all styling)
+                    document.documentElement.setAttribute('data-bs-theme', next);
                     localStorage.setItem('theme', next);
+                    updateIcons(next);
                 });
             }
 
-            function applyTheme(theme) {
-                document.documentElement.setAttribute('data-bs-theme', theme);
-
+            function updateIcons(theme) {
                 if (theme === 'dark') {
                     if (iconDark) iconDark.style.display = 'inline';
                     if (iconLight) iconLight.style.display = 'none';
-                    document.body.style.setProperty('background-color', '#0d1117', 'important');
-                    document.body.style.setProperty('color', '#e6edf3', 'important');
                 } else {
                     if (iconDark) iconDark.style.display = 'none';
                     if (iconLight) iconLight.style.display = 'inline';
-                    document.body.style.setProperty('background-color', '#ffffff', 'important');
-                    document.body.style.setProperty('color', '#24292f', 'important');
-                }
-
-                // Apply to all major containers including homepage sections
-                const containers = '.td-main, .td-content, .td-sidebar, .td-outer, main, article, .td-cover-block, .td-box, section, .blocks-cover, .blocks-lead, .blocks-section';
-                document.querySelectorAll(containers).forEach(el => {
-                    if (theme === 'light') {
-                        el.style.setProperty('background-color', '#ffffff', 'important');
-                        el.style.setProperty('color', '#24292f', 'important');
-                    } else {
-                        el.style.removeProperty('background-color');
-                        el.style.removeProperty('color');
-                    }
-                });
-
-                // Update navbar for light mode
-                const navbar = document.querySelector('.td-navbar');
-                if (navbar) {
-                    if (theme === 'light') {
-                        navbar.style.setProperty('background-color', '#24292f', 'important');
-                        navbar.classList.remove('navbar-dark');
-                        navbar.classList.add('navbar-light');
-                        // Make navbar links dark for light mode navbar
-                        navbar.querySelectorAll('.nav-link, .navbar-brand, .navbar-brand__name').forEach(link => {
-                            link.style.setProperty('color', '#ffffff', 'important');
-                        });
-                    } else {
-                        navbar.style.removeProperty('background-color');
-                        navbar.classList.remove('navbar-light');
-                        navbar.classList.add('navbar-dark');
-                        navbar.querySelectorAll('.nav-link, .navbar-brand, .navbar-brand__name').forEach(link => {
-                            link.style.removeProperty('color');
-                        });
-                    }
-                }
-
-                // Fix links and headings for light mode
-                if (theme === 'light') {
-                    document.querySelectorAll('a:not(.nav-link):not(.navbar-brand), h1, h2, h3, h4, h5, h6').forEach(el => {
-                        el.style.setProperty('color', '#24292f', 'important');
-                    });
-                    document.querySelectorAll('a:not(.nav-link):not(.navbar-brand)').forEach(el => {
-                        el.style.setProperty('color', '#0969da', 'important');
-                    });
-                } else {
-                    document.querySelectorAll('a, h1, h2, h3, h4, h5, h6').forEach(el => {
-                        el.style.removeProperty('color');
-                    });
                 }
             }
         });
