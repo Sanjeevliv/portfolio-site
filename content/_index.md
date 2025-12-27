@@ -25,31 +25,45 @@ A production-grade microservices platform on **Google Cloud** with full observab
 {{% /blocks/lead %}}
 
 {{< blocks/section color="dark" type="row" >}}
-{{% blocks/feature icon="fa-brands fa-golang" title="Go Microservices" %}}
-2 services with clean architecture, graceful shutdown, and health endpoints
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <img src="/images/icons/go.png" alt="Go" style="height: 80px; margin-bottom: 1rem;">
+  <h4>Go Microservices</h4>
+  <p>2 services with clean architecture, graceful shutdown, and health endpoints</p>
+</div>
 
-{{% blocks/feature icon="fa-brands fa-docker" title="Kubernetes (GKE)" %}}
-Autopilot cluster with Network Policies, non-root containers, and read-only filesystems
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <img src="/images/icons/kubernetes.png" alt="Kubernetes" style="height: 80px; margin-bottom: 1rem;">
+  <h4>Kubernetes (GKE)</h4>
+  <p>Autopilot cluster with Network Policies, non-root containers, and read-only filesystems</p>
+</div>
 
-{{% blocks/feature icon="fa-brands fa-redhat" title="Redis Queue" %}}
-Async job processing with producer-consumer pattern
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <img src="/images/icons/redis.png" alt="Redis" style="height: 80px; margin-bottom: 1rem;">
+  <h4>Redis Queue</h4>
+  <p>Async job processing with producer-consumer pattern</p>
+</div>
 {{< /blocks/section >}}
 
 {{< blocks/section type="row" >}}
-{{% blocks/feature icon="fa-solid fa-fire" title="Observability" url="http://monitor.sanjeevsethi.in" %}}
-Prometheus metrics, Grafana dashboards, OpenTelemetry tracing with trace_id in logs
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <a href="http://monitor.sanjeevsethi.in">
+    <img src="https://grafana.com/static/img/menu/grafana2.svg" alt="Grafana" style="height: 80px; margin-bottom: 1rem;">
+  </a>
+  <h4>Observability</h4>
+  <p>Prometheus metrics, Grafana dashboards, OpenTelemetry tracing with trace_id in logs</p>
+</div>
 
-{{% blocks/feature icon="fa-brands fa-github" title="GitOps CI/CD" %}}
-GitHub Actions builds, tests, and deploys to GKE via Helm on every push
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <img src="/images/icons/gitops.png" alt="GitOps" style="height: 80px; margin-bottom: 1rem;">
+  <h4>GitOps CI/CD</h4>
+  <p>GitHub Actions builds, tests, and deploys to GKE via Helm on every push</p>
+</div>
 
-{{% blocks/feature icon="fa-brands fa-hashnode" title="Terraform IaC" %}}
-100% infrastructure as code: VPC, GKE, Cloud DNS, all version controlled
-{{% /blocks/feature %}}
+<div class="col-lg-4 mb-5 mb-lg-0 text-center">
+  <img src="/images/icons/terraform.png" alt="Terraform" style="height: 80px; margin-bottom: 1rem;">
+  <h4>Terraform IaC</h4>
+  <p>100% infrastructure as code: VPC, GKE, Cloud DNS, all version controlled</p>
+</div>
 {{< /blocks/section >}}
 
 
