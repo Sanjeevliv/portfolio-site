@@ -1,45 +1,90 @@
 # SRE Portfolio Website
 
-This repository contains the source code for my **Site Reliability Engineering Portfolio**, built with [Hugo](https://gohugo.io/) and the [Ananke](https://github.com/theNewDynamic/gohugo-theme-ananke) theme.
+My **Site Reliability Engineering Portfolio** built with [Hugo](https://gohugo.io/) and the [Docsy](https://www.docsy.dev/) theme.
 
-**Live Site:** [https://sanjeevsethi.in](https://sanjeevsethi.in)
+**🌐 Live Site:** [https://sanjeevsethi.in](https://sanjeevsethi.in)
 
-## 🛠️ Technology Stack
-*   **Generator:** Hugo (Static Site Generator)
-*   **Theme:** Ananke
-*   **Hosting:** GitHub Pages
-*   **Deployment:** GitHub Actions (CI/CD)
-*   **Infrastructure:** Custom Domain managed via Google Cloud DNS (see `sre-platform-infra`)
+## ✨ Features
+
+- **Docsy Theme** - Professional documentation-style design (same family as kubernetes.io)
+- **Dark/Light Mode** - Toggle with 🗿 (dark) and 🤡 (light) emojis
+- **Mermaid Diagrams** - Architecture diagrams render as interactive flowcharts
+- **Responsive Design** - Works on desktop and mobile
+
+## 🛠️ Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| Generator | Hugo (Extended) |
+| Theme | [Docsy](https://www.docsy.dev/) (Hugo Module) |
+| Styling | SCSS with CSS Variables |
+| Hosting | GitHub Pages |
+| Deployment | GitHub Actions |
+| Domain | Google Cloud DNS |
 
 ## 🚀 Local Development
 
 ### Prerequisites
-*   [Hugo](https://gohugo.io/installation/) (Extended version recommended)
-*   Git
+- [Hugo Extended](https://gohugo.io/installation/) (v0.110.0+)
+- [Go](https://go.dev/dl/) (for Hugo modules)
+- [Node.js](https://nodejs.org/) (for PostCSS)
 
 ### Quick Start
-1.  **Clone the repository** (recurse submodules to get the theme):
-    ```bash
-    git clone --recurse-submodules https://github.com/Sanjeevliv/portfolio-site.git
-    cd portfolio-site
-    ```
 
-2.  **Run the development server**:
-    ```bash
-    hugo server -D
-    ```
+```bash
+# Clone the repository
+git clone https://github.com/Sanjeevliv/portfolio-site.git
+cd portfolio-site
 
-3.  **View the site**:
-    Open [http://localhost:1313](http://localhost:1313) in your browser.
+# Install dependencies
+npm install
+
+# Run the development server
+hugo server -D
+
+# View at http://localhost:1313
+```
+
+## 📂 Project Structure
+
+```
+portfolio-site/
+├── assets/scss/           # Custom SCSS (theme variables)
+├── content/
+│   ├── _index.md          # Homepage
+│   ├── docs/              # Documentation pages
+│   └── blog/              # Blog posts
+├── layouts/partials/      # Custom partials (navbar with theme toggle)
+├── hugo.yaml              # Site configuration
+├── go.mod                 # Hugo module dependencies
+└── package.json           # Node.js dependencies (PostCSS)
+```
+
+## 🎨 Theme Toggle
+
+The site supports dark/light mode with CSS variables for future-proof theming:
+
+```scss
+:root, [data-bs-theme="dark"] {
+    --bg-primary: #0d1117;
+    --text-primary: #e6edf3;
+}
+
+[data-bs-theme="light"] {
+    --bg-primary: #ffffff;
+    --text-primary: #24292f;
+}
+```
+
+Any new page automatically inherits the theme.
 
 ## 📦 Deployment
 
-deployment is automated via **GitHub Actions**.
-*   **Workflow:** `.github/workflows/hugo.yaml`
-*   **Trigger:** Push to `main` branch.
-*   **Process:** Builds the Hugo site and deploys the `public/` directory to GitHub Pages.
+Automated via **GitHub Actions** on push to `main`:
+1. Builds Hugo site
+2. Deploys to GitHub Pages
 
-## 📂 Project Structure
-*   `content/` - Markdown content for pages and blog posts.
-*   `themes/` - Submodule for the Ananke theme.
-*   `hugo.yaml` - Main configuration file.
+## 📝 Related Repositories
+
+- [sre-platform-app](https://github.com/sanjeevliv/sre-platform-app) - Go microservices
+- [sre-platform-infra](https://github.com/sanjeevliv/sre-platform-infra) - Terraform infrastructure
