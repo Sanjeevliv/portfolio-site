@@ -26,19 +26,19 @@ A production-grade microservices platform on **Google Cloud** with full observab
 
 {{< blocks/section color="dark" type="row" >}}
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="/images/icons/go.png" alt="Go" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://go.dev/blog/go-brand/Go-Logo/PNG/Go-Logo_Blue.png" alt="Go" style="height: 80px; margin-bottom: 1rem;">
   <h4>Go Microservices</h4>
   <p>2 services with clean architecture, graceful shutdown, and health endpoints</p>
 </div>
 
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="/images/icons/kubernetes.png" alt="Kubernetes" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://raw.githubusercontent.com/kubernetes/kubernetes/master/logo/logo.svg" alt="Kubernetes" style="height: 80px; margin-bottom: 1rem;">
   <h4>Kubernetes (GKE)</h4>
   <p>Autopilot cluster with Network Policies, non-root containers, and read-only filesystems</p>
 </div>
 
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="/images/icons/redis.png" alt="Redis" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg" alt="Redis" style="height: 80px; margin-bottom: 1rem;">
   <h4>Redis Queue</h4>
   <p>Async job processing with producer-consumer pattern</p>
 </div>
@@ -54,13 +54,13 @@ A production-grade microservices platform on **Google Cloud** with full observab
 </div>
 
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="/images/icons/gitops.png" alt="GitOps" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" style="height: 80px; margin-bottom: 1rem;">
   <h4>GitOps CI/CD</h4>
   <p>GitHub Actions builds, tests, and deploys to GKE via Helm on every push</p>
 </div>
 
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="/images/icons/terraform.png" alt="Terraform" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/terraform/terraform-original.svg" alt="Terraform" style="height: 80px; margin-bottom: 1rem;">
   <h4>Terraform IaC</h4>
   <p>100% infrastructure as code: VPC, GKE, Cloud DNS, all version controlled</p>
 </div>
