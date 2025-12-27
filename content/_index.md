@@ -10,6 +10,9 @@ linkTitle: "Home"
 <a class="btn btn-lg btn-secondary me-3 mb-4" href="https://github.com/sanjeevliv/sre-platform-app">
   GitHub <i class="fab fa-github ms-2 "></i>
 </a>
+<a class="btn btn-lg btn-success me-3 mb-4" href="http://monitor.sanjeevsethi.in">
+  Live Dashboard <i class="fas fa-chart-line ms-2"></i>
+</a>
 <p class="lead mt-5">B.Tech student at NIT Karnataka, Surathkal. Learning SRE by building production-grade infrastructure on GCP.</p>
 {{< blocks/link-down color="info" >}}
 {{< /blocks/cover >}}
