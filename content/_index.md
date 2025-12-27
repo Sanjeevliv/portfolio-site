@@ -55,19 +55,19 @@ GitHub Actions builds, tests, and deploys to GKE via Helm on every push
 
 {{< blocks/section color="primary" type="row" >}}
 
-{{% blocks/feature icon="fa-solid fa-code" title="Languages" %}}
+{{% blocks/feature icon="fa-brands fa-golang" title="Languages" %}}
 Go • Python • Bash
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-cloud" title="Infrastructure" %}}
+{{% blocks/feature icon="fa-brands fa-docker" title="Infrastructure" %}}
 Kubernetes (GKE) • Terraform • Docker
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-gear" title="CI/CD" %}}
+{{% blocks/feature icon="fa-brands fa-github" title="CI/CD" %}}
 GitHub Actions • Helm
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-chart-bar" title="Observability" %}}
+{{% blocks/feature icon="fa-solid fa-fire" title="Observability" %}}
 Prometheus • Grafana • OpenTelemetry
 {{% /blocks/feature %}}
 
