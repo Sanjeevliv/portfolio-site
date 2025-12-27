@@ -29,25 +29,25 @@ A production-grade microservices platform on **Google Cloud** with full observab
 2 services with clean architecture, graceful shutdown, and health endpoints
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-dharmachakra" title="Kubernetes (GKE)" %}}
+{{% blocks/feature icon="fa-brands fa-docker" title="Kubernetes (GKE)" %}}
 Autopilot cluster with Network Policies, non-root containers, and read-only filesystems
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-database" title="Redis Queue" %}}
+{{% blocks/feature icon="fa-brands fa-redhat" title="Redis Queue" %}}
 Async job processing with producer-consumer pattern
 {{% /blocks/feature %}}
 {{< /blocks/section >}}
 
 {{< blocks/section type="row" >}}
-{{% blocks/feature icon="fa-solid fa-chart-line" title="Observability" url="http://monitor.sanjeevsethi.in" %}}
+{{% blocks/feature icon="fa-solid fa-fire" title="Observability" url="http://monitor.sanjeevsethi.in" %}}
 Prometheus metrics, Grafana dashboards, OpenTelemetry tracing with trace_id in logs
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-code-branch" title="GitOps CI/CD" %}}
+{{% blocks/feature icon="fa-brands fa-github" title="GitOps CI/CD" %}}
 GitHub Actions builds, tests, and deploys to GKE via Helm on every push
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-solid fa-cubes" title="Terraform IaC" %}}
+{{% blocks/feature icon="fa-brands fa-hashnode" title="Terraform IaC" %}}
 100% infrastructure as code: VPC, GKE, Cloud DNS, all version controlled
 {{% /blocks/feature %}}
 {{< /blocks/section >}}
