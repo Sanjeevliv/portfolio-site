@@ -53,21 +53,6 @@ GitHub Actions builds, tests, and deploys to GKE via Helm on every push
 {{< /blocks/section >}}
 
 
-{{< blocks/section color="dark" type="row" >}}
-{{% blocks/feature icon="fa-solid fa-server" title="Infrastructure" %}}
-Kubernetes on GKE, Terraform IaC, Custom VPC networking
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fab fa-golang" title="Backend" url="https://github.com/sanjeevliv/sre-platform-app" %}}
-Go microservices with clean architecture, graceful shutdown
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fa-solid fa-chart-line" title="Observability" url="http://monitor.sanjeevsethi.in" %}}
-Prometheus metrics, Grafana dashboards, OpenTelemetry tracing
-{{% /blocks/feature %}}
-{{< /blocks/section >}}
-
-
 {{< blocks/section color="primary" type="row" >}}
 
 {{% blocks/feature icon="fa-solid fa-code" title="Languages" %}}
