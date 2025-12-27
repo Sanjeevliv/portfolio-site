@@ -54,7 +54,7 @@ A production-grade microservices platform on **Google Cloud** with full observab
 </div>
 
 <div class="col-lg-4 mb-5 mb-lg-0 text-center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" style="height: 80px; margin-bottom: 1rem;">
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg" alt="GitHub" style="height: 80px; margin-bottom: 1rem; filter: invert(1);">
   <h4>GitOps CI/CD</h4>
   <p>GitHub Actions builds, tests, and deploys to GKE via Helm on every push</p>
 </div>
