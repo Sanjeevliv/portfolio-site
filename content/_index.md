@@ -91,7 +91,7 @@ Prometheus • Grafana • OpenTelemetry
 {{% blocks/lead color="dark" %}}
 ## Connect
 
-- **Email**: [sanjeev.211ee142@nitk.edu.in](https://mail.google.com/mail/?view=cm&to=sanjeev.211ee142@nitk.edu.in)
+- **Email**: [sanjeevsethilive@gmail.com](https://mail.google.com/mail/?view=cm&to=sanjeevsethilive@gmail.com)
 - **GitHub**: [github.com/sanjeevliv](https://github.com/sanjeevliv)
 - **LinkedIn**: [linkedin.com/in/sanjeevliv](https://linkedin.com/in/sanjeevliv)
 {{% /blocks/lead %}}
