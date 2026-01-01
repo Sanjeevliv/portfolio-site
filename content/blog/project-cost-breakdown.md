@@ -18,7 +18,7 @@ Here is the inventory of resources currently powering this project:
 
 | Resource | Service | Purpose | Estimated Cost |
 |----------|---------|---------|----------------|
-| **Compute** | GKE Autopilot | Runs API services, workers, and monitoring stack | Pay-for-usage (vCPU/RAM) |
+| **Compute** | GKE Autopilot | Runs API services, workers, and monitoring stack | $74.00 (Base) + Usage |
 | **Networking** | Cloud Load Balancer | Exposes Grafana & Prometheus (`monitor.sanjeevsethi.in`) | ~$18.00 / mo |
 | **DNS** | Cloud DNS | Manages domain records and subdomains | ~$0.20 / mo |
 | **Storage** | Artifact Registry | Stores Docker container images | ~$0.10 / GB / mo |
@@ -68,9 +68,10 @@ The site you are reading right now is hosted on GitHub Pages.
 
 By leveraging GKE Autopilot's density and the Free Tier, and offloading static content to GitHub Pages, I keep the running costs of this "production" environment minimal.
 
-*   **Compute**: ~$5 - $10 (depending on traffic/scaling)
-*   **Load Balancing**: ~$18
-*   **DNS & Storage**: < $1
-*   **Total**: **~$25 - $30 per month**
+*   **Cluster Management Fee**: $74.00 (Often waived by Free Tier)
+*   **Compute (Pods)**: ~$5 - $10 (depending on traffic/scaling)
+*   **Load Balancing**: ~$18.00
+*   **DNS & Storage**: < $1.00
+*   **Gross Total**: **~$100 per month** (or ~$26 after Free Tier credits)
 
 This architecture proves that you can build a robust, scalable, and observable SRE platform without breaking the bank, provided you choose the right resource models.
