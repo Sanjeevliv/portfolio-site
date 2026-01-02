@@ -162,6 +162,21 @@ section[class*="blocks-"] {
     background-color: var(--bg-primary) !important;
 }
 
+/* Fix TOC active link visibility in Dark Mode */
+.td-toc .nav-link.active {
+    background-color: transparent !important;
+    color: var(--link-color) !important;
+    font-weight: 600;
+}
+
+.td-toc .nav-link {
+    color: var(--text-secondary) !important;
+}
+
+.td-toc .nav-link:hover {
+    color: var(--link-color) !important;
+}
+
 /* Code blocks */
 pre,
 code {
