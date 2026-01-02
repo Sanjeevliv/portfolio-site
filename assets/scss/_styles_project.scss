@@ -21,6 +21,18 @@
     --sidebar-bg: #0d1117;
     --card-bg: #161b22;
     --code-bg: #1a1a2e;
+
+    /* Syntax Highlighting */
+    --code-text: #e6edf3;
+    --token-comment: #8b949e;
+    --token-punctuation: #7ee787;
+    --token-property: #79c0ff;
+    --token-boolean: #ff7b72;
+    --token-number: #79c0ff;
+    --token-string: #a5d6ff;
+    --token-keyword: #ff7b72;
+    --token-function: #d2a8ff;
+    --token-operator: #7ee787;
 }
 
 /* Light mode */
@@ -37,6 +49,18 @@
     --sidebar-bg: #f6f8fa;
     --card-bg: #ffffff;
     --code-bg: #f6f8fa;
+
+    /* Syntax Highlighting */
+    --code-text: #24292f;
+    --token-comment: #6e7781;
+    --token-punctuation: #0969da;
+    --token-property: #8250df;
+    --token-boolean: #cf222e;
+    --token-number: #0550ae;
+    --token-string: #0a3069;
+    --token-keyword: #cf222e;
+    --token-function: #8250df;
+    --token-operator: #0969da;
 }
 
 /* ============================================
@@ -231,4 +255,106 @@ footer,
 [data-bs-theme="light"] .td-navbar .text-white {
     background-color: transparent !important;
     color: #ffffff !important;
+}
+
+/* ============================================
+   SYNTAX HIGHLIGHTING RULES
+   ============================================ */
+
+/* Apply to all code blocks */
+code[class*="language-"],
+pre[class*="language-"] {
+    color: var(--code-text) !important;
+    background: var(--code-bg) !important;
+    text-shadow: none !important;
+}
+
+/* Code block backgrounds */
+pre[class*="language-"] {
+    background: var(--code-bg) !important;
+}
+
+:not(pre)>code[class*="language-"] {
+    background: var(--code-bg) !important;
+}
+
+/* Token colors */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: var(--token-comment) !important;
+}
+
+.token.punctuation {
+    color: var(--token-punctuation) !important;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+    color: var(--token-property) !important;
+}
+
+.token.boolean,
+.token.number {
+    color: var(--token-number) !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+    color: var(--token-string) !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+    color: var(--token-operator) !important;
+    background: transparent !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: var(--token-keyword) !important;
+}
+
+.token.function,
+.token.class-name {
+    color: var(--token-function) !important;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+    color: var(--token-keyword) !important;
+}
+
+/* Namespace opacity */
+.token.namespace {
+    opacity: 0.7;
+}
+
+/* Inline code style */
+:not(pre)>code {
+    background: var(--code-bg) !important;
+    color: var(--code-text) !important;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}
+
+/* Code toolbar (copy button) */
+div.code-toolbar>.toolbar>.toolbar-item>a,
+div.code-toolbar>.toolbar>.toolbar-item>button,
+div.code-toolbar>.toolbar>.toolbar-item>span {
+    background: var(--code-bg) !important;
+    color: var(--code-text) !important;
 }
