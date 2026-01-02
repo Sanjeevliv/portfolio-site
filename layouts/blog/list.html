@@ -1,0 +1,36 @@
+{{ define "main" -}}
+
+<div class="td-content">
+<h1>{{ .Title }}</h1>
+{{ with .Content }}{{ . }}{{ end -}}
+</div>
+{{ if (and .Parent .Parent.IsHome) -}}
+  {{ $.Scratch.Set "blog-pages" (where .Site.RegularPages "Section" .Section) -}}
+{{ else -}}
+  {{$.Scratch.Set "blog-pages" .Pages -}}
+{{ end -}}
+
+{{ if .Pages -}}
+<div class="td-blog-posts">
+  {{ $pager := .Paginate (( $.Scratch.Get "blog-pages").GroupByDate "2006" ) -}}
+  {{ range $pager.PageGroups -}}
+  <div class="h2">{{ T "post_posts_in" }} {{ .Key }}</div>
+  <ul class="td-blog-posts-list">
+    {{ range .Pages -}}
+    <li class="td-blog-posts-list__item">
+      <div class="td-blog-posts-list__body">
+        <h5 class="mt-0 mb-1"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h5>
+        <p class="mb-2 mb-md-3"><small class="text-body-secondary">
+          {{- .Date.Format ($.Param "time_format_blog") }} {{ T "ui_in"}} {{ .CurrentSection.LinkTitle -}}
+        </small></p>
+      </div>
+    </li>
+    {{ end -}}
+  </ul>
+  {{ end -}}
+</div>
+<div class="td-blog-posts__pagination">
+  {{ partial "pagination.html" . -}}
+</div>
+{{- end -}}
+{{ end -}}

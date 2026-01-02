@@ -2,8 +2,6 @@
 title: "The Price of Reliability: A Cost & Resource Breakdown"
 date: 2026-01-01
 draft: false
-tags: ["sre", "finops", "gcp", "kubernetes"]
-categories: ["Infrastructure", "SRE Portfolio"]
 ---
 
 Building a production-grade SRE portfolio isn't just about code; it's about understanding the infrastructure that supports it. One of the key responsibilities of a Site Reliability Engineer (SRE) is balancing reliability with cost—a practice often called FinOps.
