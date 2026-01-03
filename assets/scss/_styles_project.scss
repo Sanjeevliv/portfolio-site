@@ -11,22 +11,32 @@
 [data-bs-theme="dark"] {
     /* Kubernetes Docs (Docsy) Inspired Dark Theme */
     /* Deep Blue-Gray Backgrounds */
-    --bg-primary: #23272e;   /* Main background - slightly lighter than pure black */
-    --bg-secondary: #2d333b; /* Sidebar/Cards - lighter for contrast */
-    --bg-tertiary: #373e47;  /* Alternating sections/Inputs */
-    
+    --bg-primary: #23272e;
+    /* Main background - slightly lighter than pure black */
+    --bg-secondary: #2d333b;
+    /* Sidebar/Cards - lighter for contrast */
+    --bg-tertiary: #373e47;
+    /* Alternating sections/Inputs */
+
     /* Text */
-    --text-primary: #adbac7; /* Soft white/gray for main text */
-    --text-secondary: #768390; /* Muted text */
+    --text-primary: #adbac7;
+    /* Soft white/gray for main text */
+    --text-secondary: #768390;
+    /* Muted text */
     --text-muted: #636e7b;
-    
+
     /* UI Elements */
-    --link-color: #539bf5;   /* Bright blue for links */
-    --border-color: #444c56; /* Subtle border */
-    --navbar-bg: #2d333b;    /* Match secondary for header */
-    --sidebar-bg: #2d333b;   /* Match secondary for sidebar */
+    --link-color: #539bf5;
+    /* Bright blue for links */
+    --border-color: #444c56;
+    /* Subtle border */
+    --navbar-bg: #2d333b;
+    /* Match secondary for header */
+    --sidebar-bg: #2d333b;
+    /* Match secondary for sidebar */
     --card-bg: #2d333b;
-    --code-bg: #2f363d;      /* Slightly distinct for code */
+    --code-bg: #2f363d;
+    /* Slightly distinct for code */
 
     /* Syntax Highlighting */
     --code-text: #adbac7;
@@ -378,4 +388,78 @@ div.code-toolbar>.toolbar>.toolbar-item>button,
 div.code-toolbar>.toolbar>.toolbar-item>span {
     background: var(--code-bg) !important;
     color: var(--code-text) !important;
+}
+
+/* ============================================
+   SOCIAL ICON BUTTONS
+   ============================================ */
+
+.btn-social-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: transparent;
+    border: 2px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-social-icon svg {
+    width: 24px;
+    height: 24px;
+    transition: all 0.3s ease;
+}
+
+.btn-social-icon:hover {
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    border-color: transparent;
+}
+
+.btn-social-icon:hover svg path {
+    fill: #ffffff !important;
+}
+
+/* Email - Gmail Multicolor M */
+.btn-email {
+    border-color: #ea4335;
+}
+
+.btn-email:hover {
+    background: #ea4335;
+    box-shadow: 0 0 15px rgba(234, 67, 53, 0.5);
+}
+
+/* GitHub - Purple/Black */
+.btn-github {
+    border-color: var(--text-primary);
+}
+
+.btn-github svg path {
+    fill: var(--text-primary);
+}
+
+.btn-github:hover {
+    background: #181717;
+    box-shadow: 0 0 15px rgba(24, 23, 23, 0.5);
+}
+
+[data-bs-theme="dark"] .btn-github:hover {
+    background: #6e5494;
+    box-shadow: 0 0 15px rgba(110, 84, 148, 0.5);
+}
+
+/* LinkedIn - Blue */
+.btn-linkedin {
+    border-color: #0b66c2;
+}
+
+.btn-linkedin:hover {
+    background: #0b66c2;
+    box-shadow: 0 0 15px rgba(11, 102, 194, 0.5);
 }
