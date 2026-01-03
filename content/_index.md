@@ -92,7 +92,7 @@ Prometheus • Grafana • OpenTelemetry
 ## Connect
 
 <div class="mx-auto mt-4 text-center">
-  <a class="btn btn-social-icon btn-email me-3" href="mailto:sanjeevsethilive@gmail.com" aria-label="Email">
+  <a class="btn btn-social-icon btn-email me-3" href="https://mail.google.com/mail/?view=cm&fs=1&to=sanjeevsethilive@gmail.com" target="_blank" rel="noopener" aria-label="Email">
       <svg viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg">
           <path fill="#0085f7" d="M34.909 448.047h81.455V250.229l-53.338-93.138L0 162.956v250.182c0 19.287 15.622 34.909 34.909 34.909z" opacity="1" data-original="#0085f7"></path>
           <path fill="#00a94b" d="M395.636 448.047h81.455c19.287 0 34.909-15.622 34.909-34.909V162.956l-62.935-5.865-53.428 93.138v197.818z" opacity="1" data-original="#00a94b"></path>
