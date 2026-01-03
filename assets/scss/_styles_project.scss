@@ -9,30 +9,36 @@
 /* Dark mode (default) */
 :root,
 [data-bs-theme="dark"] {
-    --bg-primary: #0d1117;
-    --bg-secondary: #161b22;
-    --bg-tertiary: #21262d;
-    --text-primary: #e6edf3;
-    --text-secondary: #8b949e;
-    --text-muted: #6e7681;
-    --link-color: #58a6ff;
-    --border-color: #30363d;
-    --navbar-bg: #161b22;
-    --sidebar-bg: #0d1117;
-    --card-bg: #161b22;
-    --code-bg: #1a1a2e;
+    /* Kubernetes Docs (Docsy) Inspired Dark Theme */
+    /* Deep Blue-Gray Backgrounds */
+    --bg-primary: #23272e;   /* Main background - slightly lighter than pure black */
+    --bg-secondary: #2d333b; /* Sidebar/Cards - lighter for contrast */
+    --bg-tertiary: #373e47;  /* Alternating sections/Inputs */
+    
+    /* Text */
+    --text-primary: #adbac7; /* Soft white/gray for main text */
+    --text-secondary: #768390; /* Muted text */
+    --text-muted: #636e7b;
+    
+    /* UI Elements */
+    --link-color: #539bf5;   /* Bright blue for links */
+    --border-color: #444c56; /* Subtle border */
+    --navbar-bg: #2d333b;    /* Match secondary for header */
+    --sidebar-bg: #2d333b;   /* Match secondary for sidebar */
+    --card-bg: #2d333b;
+    --code-bg: #2f363d;      /* Slightly distinct for code */
 
     /* Syntax Highlighting */
-    --code-text: #e6edf3;
-    --token-comment: #8b949e;
-    --token-punctuation: #7ee787;
-    --token-property: #79c0ff;
-    --token-boolean: #ff7b72;
-    --token-number: #79c0ff;
-    --token-string: #a5d6ff;
-    --token-keyword: #ff7b72;
-    --token-function: #d2a8ff;
-    --token-operator: #7ee787;
+    --code-text: #adbac7;
+    --token-comment: #768390;
+    --token-punctuation: #adbac7;
+    --token-property: #8ddb8c;
+    --token-boolean: #ff938a;
+    --token-number: #6cb6ff;
+    --token-string: #96d0ff;
+    --token-keyword: #f47067;
+    --token-function: #dcbdfb;
+    --token-operator: #adbac7;
 }
 
 /* Light mode */
