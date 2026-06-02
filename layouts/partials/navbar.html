@@ -36,39 +36,78 @@
 
 <script>
     (function () {
-        // Apply theme immediately to prevent flash
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        const STORAGE_KEY = 'td-color-theme';
+        const TOGGLE_ID = 'theme-toggle-nav';
+        const ICON_DARK_ID = 'nav-icon-dark';
+        const ICON_LIGHT_ID = 'nav-icon-light';
+
+        function getPreferredTheme() {
+            return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function getCurrentTheme() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored === 'dark' || stored === 'light') return stored;
+            return document.documentElement.getAttribute('data-bs-theme') || getPreferredTheme();
+        }
+
+        function updateIcons(theme) {
+            const iconDark = document.getElementById(ICON_DARK_ID);
+            const iconLight = document.getElementById(ICON_LIGHT_ID);
+            const toggle = document.getElementById(TOGGLE_ID);
+
+            if (!iconDark || !iconLight) return;
+
+            if (theme === 'dark') {
+                iconDark.style.display = 'inline';
+                iconLight.style.display = 'none';
+                if (toggle) toggle.setAttribute('aria-pressed', 'true');
+                if (toggle) toggle.setAttribute('aria-label', 'Switch to light mode');
+            } else {
+                iconDark.style.display = 'none';
+                iconLight.style.display = 'inline';
+                if (toggle) toggle.setAttribute('aria-pressed', 'false');
+                if (toggle) toggle.setAttribute('aria-label', 'Switch to dark mode');
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function () {
-            const toggle = document.getElementById('theme-toggle-nav');
-            const iconDark = document.getElementById('nav-icon-dark');
-            const iconLight = document.getElementById('nav-icon-light');
+            const toggle = document.getElementById(TOGGLE_ID);
+            const initialTheme = getCurrentTheme();
 
-            // Set initial icon state
-            updateIcons(savedTheme);
+            document.documentElement.setAttribute('data-bs-theme', initialTheme);
+            updateIcons(initialTheme);
 
             if (toggle) {
                 toggle.addEventListener('click', function () {
-                    const current = localStorage.getItem('theme') || 'dark';
+                    const current = getCurrentTheme();
                     const next = current === 'dark' ? 'light' : 'dark';
 
-                    // Update theme attribute (CSS handles all styling)
                     document.documentElement.setAttribute('data-bs-theme', next);
-                    localStorage.setItem('theme', next);
+                    localStorage.setItem(STORAGE_KEY, next);
                     updateIcons(next);
                 });
             }
 
-            function updateIcons(theme) {
-                if (theme === 'dark') {
-                    if (iconDark) iconDark.style.display = 'inline';
-                    if (iconLight) iconLight.style.display = 'none';
-                } else {
-                    if (iconDark) iconDark.style.display = 'none';
-                    if (iconLight) iconLight.style.display = 'inline';
-                }
+            if (window.matchMedia) {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+                    if (!localStorage.getItem(STORAGE_KEY)) {
+                        const next = getPreferredTheme();
+                        document.documentElement.setAttribute('data-bs-theme', next);
+                        updateIcons(next);
+                    }
+                });
             }
+
+            window.addEventListener('storage', function (event) {
+                if (event.key === STORAGE_KEY) {
+                    const next = event.newValue === 'dark' || event.newValue === 'light'
+                        ? event.newValue
+                        : getPreferredTheme();
+                    document.documentElement.setAttribute('data-bs-theme', next);
+                    updateIcons(next);
+                }
+            });
         });
     })();
 </script>
