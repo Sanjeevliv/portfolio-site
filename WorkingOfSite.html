@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SRE Portfolio Website: Codebase Working Artifact</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2f;
+      --text: #e6edf3;
+      --muted: #9fb0c0;
+      --accent: #4ea1ff;
+      --border: #2a3658;
+      --ok: #3fb950;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+    h1, h2, h3 { line-height: 1.25; margin: 0 0 12px; }
+    h1 { font-size: 2rem; }
+    h2 {
+      font-size: 1.35rem;
+      margin-top: 34px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      background: #1a2440;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.92em;
+    }
+    pre {
+      background: #0f1630;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      overflow: auto;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .pill {
+      display: inline-block;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    ol, ul { margin-top: 8px; }
+    .toc a { display: block; margin: 5px 0; }
+    .ok { color: var(--ok); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>SRE Portfolio Website: Complete Working Artifact</h1>
+    <p class="muted">
+      Live site: <a href="https://sanjeevsethi.in" target="_blank" rel="noopener">https://sanjeevsethi.in</a>
+      • Generated from local repo analysis
+    </p>
+
+    <div class="card toc">
+      <h2 style="margin-top:0;border-bottom:none;padding-bottom:0">Table of Contents</h2>
+      <a href="#what">1. What this codebase is</a>
+      <a href="#runtime">2. Runtime model</a>
+      <a href="#structure">3. Folder responsibilities</a>
+      <a href="#flow">4. Hugo + Docsy rendering flow</a>
+      <a href="#routes">5. Content routing</a>
+      <a href="#theme">6. Theme toggle internals</a>
+      <a href="#md">7. Markdown, Mermaid, syntax highlight</a>
+      <a href="#deploy">8. CI/CD and deployment</a>
+      <a href="#ownership">9. Custom vs theme ownership</a>
+      <a href="#mental">10. End-to-end mental model</a>
+    </div>
+
+    <h2 id="what">1) What This Codebase Is</h2>
+    <div class="card">
+      <span class="pill">Hugo Extended</span>
+      <span class="pill">Docsy Theme</span>
+      <span class="pill">SCSS Overrides</span>
+      <span class="pill">GitHub Actions</span>
+      <span class="pill">GitHub Pages</span>
+      <p>This is a static website built with Hugo and Docsy. Your custom code mainly lives in <code>layouts/</code>, <code>assets/scss/</code>, and <code>content/</code>.</p>
+    </div>
+
+    <h2 id="runtime">2) Runtime Model (Live Site Behavior)</h2>
+    <div class="card">
+      <ol>
+        <li>Hugo compiles markdown + templates into static files in <code>public/</code>.</li>
+        <li>GitHub Actions uploads <code>public/</code> to Pages.</li>
+        <li>GitHub Pages serves HTML/CSS/JS.</li>
+        <li>Browser JS handles dark/light mode toggle.</li>
+      </ol>
+      <p class="ok">No backend process runs for this site in production.</p>
+    </div>
+
+    <h2 id="structure">3) Folder Responsibilities</h2>
+    <div class="grid">
+      <div class="card"><strong><code>content/</code></strong><br/>All pages, docs, blog posts.</div>
+      <div class="card"><strong><code>layouts/</code></strong><br/>Template overrides; takes precedence over Docsy defaults.</div>
+      <div class="card"><strong><code>assets/scss/</code></strong><br/>Theme variables + global visual overrides.</div>
+      <div class="card"><strong><code>_vendor/</code></strong><br/>Vendored modules (Docsy, Bootstrap, Font Awesome).</div>
+      <div class="card"><strong><code>hugo.yaml</code></strong><br/>Site config, menu, params, taxonomies, markup settings.</div>
+      <div class="card"><strong><code>.github/workflows/hugo.yaml</code></strong><br/>Build and deploy pipeline.</div>
+    </div>
+
+    <h2 id="flow">4) Hugo + Docsy Rendering Flow</h2>
+    <div class="card">
+      <p>Hugo resolves templates in this order:</p>
+      <ol>
+        <li>Your <code>layouts/</code> overrides</li>
+        <li>Docsy module templates</li>
+      </ol>
+      <p>Key custom overrides:</p>
+      <ul>
+        <li><code>layouts/partials/navbar.html</code> - custom navbar + theme toggle JS</li>
+        <li><code>layouts/partials/hooks/head-end.html</code> - SEO meta tags</li>
+        <li><code>layouts/blog/list.html</code> - blog list grouped by year + pagination</li>
+        <li><code>assets/scss/_styles_project.scss</code> - global dark/light system and UI overrides</li>
+      </ul>
+    </div>
+
+    <h2 id="routes">5) Content Routing</h2>
+    <div class="card">
+      <ul>
+        <li><code>content/_index.md</code> -> <code>/</code> (home)</li>
+        <li><code>content/docs/_index.md</code> -> <code>/docs/</code></li>
+        <li><code>content/docs/architecture.md</code> -> <code>/docs/architecture/</code></li>
+        <li><code>content/blog/_index.md</code> -> <code>/blog/</code></li>
+      </ul>
+      <p>Home page is shortcode-driven using Docsy blocks (cover/lead/section/feature).</p>
+    </div>
+
+    <h2 id="theme">6) Theme Toggle Internals</h2>
+    <div class="card">
+      <ol>
+        <li>Read <code>localStorage.theme</code> (default <code>dark</code>).</li>
+        <li>Set <code>data-bs-theme</code> on <code>&lt;html&gt;</code>.</li>
+        <li>On click, switch <code>dark</code> / <code>light</code>, save state, update icon.</li>
+      </ol>
+      <p>SCSS maps each mode to CSS variables for backgrounds, text, links, navbar, code blocks, TOC, and footer.</p>
+    </div>
+
+    <h2 id="md">7) Markdown, Mermaid, and Highlighting</h2>
+    <div class="card">
+      <ul>
+        <li><code>params.mermaid.enable: true</code></li>
+        <li><code>markup.goldmark.renderer.unsafe: true</code> (allows raw HTML in markdown)</li>
+        <li><code>markup.highlight.style: dracula</code></li>
+      </ul>
+      <p>Mermaid diagrams in docs are rendered as part of the static site and styled by your CSS overrides.</p>
+    </div>
+
+    <h2 id="deploy">8) CI/CD and Deployment</h2>
+    <div class="card">
+      <p>Workflow: <code>.github/workflows/hugo.yaml</code></p>
+      <ol>
+        <li>Trigger on push to <code>main</code>.</li>
+        <li>Install Hugo Extended + Dart Sass.</li>
+        <li>Run <code>npm ci</code> if lock file exists.</li>
+        <li>Build with <code>hugo --gc --minify</code>.</li>
+        <li>Upload <code>public/</code> artifact.</li>
+        <li>Deploy using <code>actions/deploy-pages@v4</code>.</li>
+      </ol>
+    </div>
+
+    <h2 id="ownership">9) Custom vs Theme Ownership</h2>
+    <div class="grid">
+      <div class="card">
+        <strong>Custom-owned (your repo)</strong>
+        <ul>
+          <li>Home content composition</li>
+          <li>Navbar + theme toggle logic</li>
+          <li>SEO head tags</li>
+          <li>Blog list override</li>
+          <li>Dark/light palette system</li>
+        </ul>
+      </div>
+      <div class="card">
+        <strong>Theme-owned (Docsy)</strong>
+        <ul>
+          <li>Base templates and page shell</li>
+          <li>Most docs/blog layout behavior</li>
+          <li>Shortcode implementations</li>
+          <li>Bootstrap and core theme JS/CSS</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 id="mental">10) End-to-End Mental Model</h2>
+    <div class="card">
+      <pre><code>content/*.md + hugo.yaml + layouts overrides + SCSS
+                    |
+                    v
+                Hugo build
+                    |
+                    v
+         static public/ HTML CSS JS
+                    |
+                    v
+        GitHub Actions -> GitHub Pages
+                    |
+                    v
+     Browser loads page + applies saved theme</code></pre>
+      <p class="muted">If you edit content, templates, or SCSS and push to <code>main</code>, this pipeline regenerates and republishes the live site.</p>
+    </div>
+  </main>
+</body>
+</html>
