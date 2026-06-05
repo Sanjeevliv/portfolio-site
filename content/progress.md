@@ -48,12 +48,12 @@ I use this page to track DSA practice for June.
       <tr>
         <td>Done / Target</td>
         <td><strong>7/15</strong></td>
-        <td><strong>12/20</strong></td>
+        <td><strong>12/30</strong></td>
       </tr>
       <tr>
         <td>Behind / ahead</td>
         <td>-8</td>
-        <td>-8</td>
+        <td>-18</td>
       </tr>
     </tbody>
   </table>
