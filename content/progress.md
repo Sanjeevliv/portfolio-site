@@ -47,13 +47,13 @@ I use this page to track DSA practice for June.
     <tbody>
       <tr>
         <td>Done / Target</td>
-        <td><strong>7/15</strong></td>
-        <td><strong>12/30</strong></td>
+        <td><strong>11/20</strong></td>
+        <td><strong>12/40</strong></td>
       </tr>
       <tr>
         <td>Behind / ahead</td>
-        <td>-8</td>
-        <td>-18</td>
+        <td>-9</td>
+        <td>-28</td>
       </tr>
     </tbody>
   </table>
@@ -101,6 +101,12 @@ I use this page to track DSA practice for June.
         <td>2</td>
         <td>1</td>
         <td class="text-start">Continued Trees DFS questions</td>
+      </tr>
+      <tr>
+        <td><code>2026-06-05</code></td>
+        <td>4</td>
+        <td>0</td>
+        <td class="text-start">Trees Medium Questions</td>
       </tr>
     </tbody>
   </table>
