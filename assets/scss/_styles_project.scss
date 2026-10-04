@@ -83,6 +83,10 @@
    GLOBAL STYLES (applies to ALL pages)
    ============================================ */
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: var(--bg-primary) !important;
     color: var(--text-primary) !important;

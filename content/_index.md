@@ -25,7 +25,7 @@ linkTitle: "Home"
 {{< blocks/link-down color="info" >}}
 {{< /blocks/cover >}}
 
-<div class="container my-5" style="max-width: 860px;">
+<div id="td-block-1" class="container my-5" style="max-width: 860px; scroll-margin-top: 80px;">
 
 <div class="card p-4 mb-5 border rounded-3" style="background-color: var(--bg-secondary); border-color: var(--border-color) !important;">
   <div class="d-flex align-items-center mb-2">
