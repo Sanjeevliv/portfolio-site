@@ -4,6 +4,11 @@
 /assets/jsconfig.json
 hugo_stats.json
 
-# OS
+# OS & Editor
 .DS_Store
+.venv/
+
+# Dependencies & Build
 node_modules/
+.hugo_build.lock
+archive/

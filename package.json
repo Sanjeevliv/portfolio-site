@@ -1,7 +1,7 @@
 {
   "name": "portfolio-site",
   "version": "1.0.0",
-  "description": "This repository contains the source code for my **Site Reliability Engineering Portfolio**, built with [Hugo](https://gohugo.io/) and the [Ananke](https://github.com/theNewDynamic/gohugo-theme-ananke) theme.",
+  "description": "Source code for the personal portfolio of Sanjeev Sethi, built with Hugo and Docsy.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,8 +10,12 @@
     "type": "git",
     "url": "git+https://github.com/Sanjeevliv/portfolio-site.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "portfolio",
+    "hugo",
+    "docsy"
+  ],
+  "author": "Sanjeev Sethi",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
