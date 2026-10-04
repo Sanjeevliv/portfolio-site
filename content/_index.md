@@ -13,7 +13,8 @@ linkTitle: "Home"
 <a class="btn btn-lg btn-secondary me-3 mb-4" href="https://mail.google.com/mail/?view=cm&fs=1&to=sanjeevsethilive@gmail.com" target="_blank" rel="noopener">
   Email <i class="fas fa-envelope ms-2"></i>
 </a>
-<p class="lead mt-5">B.Tech student at NIT Karnataka, Surathkal. Passionate about systems programming, networking, and cloud-native infrastructure.</p>
+<p class="lead mt-5 mb-2">Systems / Infrastructure Engineer focused on Linux, networking, Go, Kubernetes, and cloud-native systems.</p>
+<p class="fs-5 opacity-75">B.Tech, NIT Karnataka, Surathkal</p>
 {{< blocks/link-down color="info" >}}
 {{< /blocks/cover >}}
 
