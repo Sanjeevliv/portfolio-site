@@ -1,26 +1,25 @@
-# SRE Portfolio Website
+# Sanjeev Sethi — Personal Portfolio
 
-My **Site Reliability Engineering Portfolio** built with [Hugo](https://gohugo.io/) and the [Docsy](https://www.docsy.dev/) theme.
+Source code for my personal website, built with [Hugo](https://gohugo.io/) and [Docsy](https://www.docsy.dev/).
 
 **🌐 Live Site:** [https://sanjeevsethi.in](https://sanjeevsethi.in)
 
 ## ✨ Features
 
-- **Docsy Theme** - Professional documentation-style design (same family as kubernetes.io)
-- **Dark/Light Mode** - Toggle with 🗿 (dark) and 🤡 (light) emojis
-- **Mermaid Diagrams** - Architecture diagrams render as interactive flowcharts
-- **Responsive Design** - Works on desktop and mobile
+- **Dark / Light Mode** - Native theme toggle with CSS variable theming
+- **Fast & Minimal** - Static site hosted on GitHub Pages
+- **Responsive** - Optimized for mobile and desktop reading
 
 ## 🛠️ Tech Stack
 
 | Category | Technology |
-|----------|------------|
+|---|---|
 | Generator | Hugo (Extended) |
 | Theme | [Docsy](https://www.docsy.dev/) (Hugo Module) |
 | Styling | SCSS with CSS Variables |
 | Hosting | GitHub Pages |
 | Deployment | GitHub Actions |
-| Domain | Google Cloud DNS |
+| DNS / CDN | Cloudflare |
 
 ## 🚀 Local Development
 
@@ -52,7 +51,6 @@ portfolio-site/
 ├── assets/scss/           # Custom SCSS (theme variables)
 ├── content/
 │   ├── _index.md          # Homepage
-│   ├── docs/              # Documentation pages
 │   └── blog/              # Blog posts
 ├── layouts/partials/      # Custom partials (navbar with theme toggle)
 ├── hugo.yaml              # Site configuration
@@ -60,31 +58,8 @@ portfolio-site/
 └── package.json           # Node.js dependencies (PostCSS)
 ```
 
-## 🎨 Theme Toggle
-
-The site supports dark/light mode with CSS variables for future-proof theming:
-
-```scss
-:root, [data-bs-theme="dark"] {
-    --bg-primary: #0d1117;
-    --text-primary: #e6edf3;
-}
-
-[data-bs-theme="light"] {
-    --bg-primary: #ffffff;
-    --text-primary: #24292f;
-}
-```
-
-Any new page automatically inherits the theme.
-
 ## 📦 Deployment
 
 Automated via **GitHub Actions** on push to `main`:
 1. Builds Hugo site
 2. Deploys to GitHub Pages
-
-## 📝 Related Repositories
-
-- [sre-platform-app](https://github.com/sanjeevliv/sre-platform-app) - Go microservices
-- [sre-platform-infra](https://github.com/sanjeevliv/sre-platform-infra) - Terraform infrastructure
