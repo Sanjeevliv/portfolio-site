@@ -393,3 +393,182 @@ div.code-toolbar>.toolbar>.toolbar-item>span {
     background: var(--code-bg) !important;
     color: var(--code-text) !important;
 }
+
+/* ============================================
+   RESUME DUAL-FORMAT CAPSULE BUTTON
+   ============================================ */
+
+.resume-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    min-height: 48px;
+    box-sizing: border-box;
+    border-radius: var(--bs-btn-border-radius, 0.5rem);
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 0.25rem 0.4rem 0.25rem 1rem;
+    font-size: 1.25rem; /* matches btn-lg */
+    line-height: 1.5;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    text-decoration: none;
+    position: relative;
+}
+
+[data-bs-theme="dark"] .resume-pill-btn {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(45, 51, 59, 0.7);
+}
+
+[data-bs-theme="light"] .resume-pill-btn {
+    border-color: #d0d7de;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.resume-pill-btn:hover {
+    border-color: var(--link-color);
+    box-shadow: 0 4px 12px rgba(83, 155, 245, 0.15);
+}
+
+/* Main label link */
+.resume-pill-main {
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-primary) !important;
+    text-decoration: none !important;
+    font-weight: 500;
+    padding-right: 0.65rem;
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.resume-pill-main:hover {
+    color: var(--link-color) !important;
+    opacity: 1;
+}
+
+.resume-pill-main i {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.resume-pill-main:hover i {
+    color: var(--link-color);
+    transform: translateY(-1px);
+}
+
+/* Vertical divider */
+.resume-pill-divider {
+    display: inline-block;
+    width: 1px;
+    height: 1.5rem;
+    background: var(--border-color);
+    margin: 0 0.5rem 0 0.15rem;
+    opacity: 0.6;
+}
+
+/* Format tags wrapper */
+.resume-pill-formats {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Format badges/chips */
+.resume-pill-format {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.375rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* PDF chip styling */
+.resume-pill-format.format-pdf {
+    color: var(--text-primary);
+    background: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.25);
+}
+
+.resume-pill-format.format-pdf i {
+    color: #ef4444;
+    transition: transform 0.2s ease;
+}
+
+.resume-pill-format.format-pdf:hover {
+    background: rgba(239, 68, 68, 0.22);
+    border-color: #ef4444;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+}
+
+.resume-pill-format.format-pdf:hover i {
+    transform: scale(1.1);
+}
+
+/* DOCX chip styling */
+.resume-pill-format.format-docx {
+    color: var(--text-primary);
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.25);
+}
+
+.resume-pill-format.format-docx i {
+    color: #3b82f6;
+    transition: transform 0.2s ease;
+}
+
+.resume-pill-format.format-docx:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: #3b82f6;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+}
+
+.resume-pill-format.format-docx:hover i {
+    transform: scale(1.1);
+}
+
+/* Light mode adjustments for format chips */
+[data-bs-theme="light"] .resume-pill-format.format-pdf {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #b91c1c;
+}
+
+[data-bs-theme="light"] .resume-pill-format.format-pdf:hover {
+    background: #ef4444;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="light"] .resume-pill-format.format-pdf:hover i {
+    color: #ffffff;
+}
+
+[data-bs-theme="light"] .resume-pill-format.format-docx {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #1d4ed8;
+}
+
+[data-bs-theme="light"] .resume-pill-format.format-docx:hover {
+    background: #2563eb;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="light"] .resume-pill-format.format-docx:hover i {
+    color: #ffffff;
+}

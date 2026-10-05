@@ -8,9 +8,22 @@ linkTitle: "Home"
 <p class="fs-5 opacity-75 mb-4">B.Tech — NIT Karnataka, Surathkal</p>
 
 <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-  <a class="btn btn-lg btn-outline-light me-2 mb-2" href="/resume.pdf" target="_blank" rel="noopener">
-    Résumé <i class="fas fa-file-pdf ms-1"></i>
-  </a>
+  <div class="resume-pill-btn me-2 mb-2" role="group" aria-label="Résumé formats">
+    <a class="resume-pill-main" href="/resume.pdf" target="_blank" rel="noopener" title="View PDF Résumé">
+      <i class="fas fa-file-lines me-2"></i>Résumé
+    </a>
+    <span class="resume-pill-divider" aria-hidden="true"></span>
+    <div class="resume-pill-formats">
+      <a class="resume-pill-format format-pdf" href="/resume.pdf" target="_blank" rel="noopener" title="Open PDF version">
+        <i class="fas fa-file-pdf"></i>
+        <span>PDF</span>
+      </a>
+      <a class="resume-pill-format format-docx" href="/resume.docx" download="Sanjeev_Sethi_Resume.docx" title="Download Word (.docx) version">
+        <i class="fas fa-file-word"></i>
+        <span>DOCX</span>
+      </a>
+    </div>
+  </div>
   <a class="btn btn-lg btn-primary me-2 mb-2" href="https://github.com/sanjeevliv" target="_blank" rel="noopener">
     GitHub <i class="fab fa-github ms-1"></i>
   </a>
