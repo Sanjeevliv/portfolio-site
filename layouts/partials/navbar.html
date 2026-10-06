@@ -1,4 +1,4 @@
-{{/* Override Docsy's navbar to add theme toggle */}}
+{{/* Override Docsy's navbar to add theme toggle and interactive background */}}
 <nav class="td-navbar js-navbar-scroll navbar-expand navbar-dark flex-column flex-md-row td-navbar"
     aria-label="Main navigation">
     <div class="container-fluid flex-row d-flex justify-content-between align-items-center">
@@ -86,6 +86,10 @@
                     document.documentElement.setAttribute('data-bs-theme', next);
                     localStorage.setItem(STORAGE_KEY, next);
                     updateIcons(next);
+
+                    if (window.bgCanvas) {
+                        window.bgCanvas.accentColor = next === 'dark' ? '#4ef2d2' : '#2563eb';
+                    }
                 });
             }
 
@@ -95,6 +99,9 @@
                         const next = getPreferredTheme();
                         document.documentElement.setAttribute('data-bs-theme', next);
                         updateIcons(next);
+                        if (window.bgCanvas) {
+                            window.bgCanvas.accentColor = next === 'dark' ? '#4ef2d2' : '#2563eb';
+                        }
                     }
                 });
             }
@@ -106,8 +113,39 @@
                         : getPreferredTheme();
                     document.documentElement.setAttribute('data-bs-theme', next);
                     updateIcons(next);
+                    if (window.bgCanvas) {
+                        window.bgCanvas.accentColor = next === 'dark' ? '#4ef2d2' : '#2563eb';
+                    }
                 }
             });
         });
+    })();
+</script>
+
+<script src='{{ "js/background-canvas.js" | relURL }}' defer></script>
+<script>
+    (function () {
+        function setupInteractiveCanvas() {
+            if (typeof InteractiveBackground === 'undefined') {
+                setTimeout(setupInteractiveCanvas, 40);
+                return;
+            }
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'dark';
+            window.bgCanvas = new InteractiveBackground({
+                canvasId: 'bg-canvas',
+                mode: 'constellation',
+                color: currentTheme === 'dark' ? '#4ef2d2' : '#2563eb',
+                particleCount: 75,
+                maxDistance: 130,
+                mouseRadius: 165,
+                speed: 0.6
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupInteractiveCanvas);
+        } else {
+            setupInteractiveCanvas();
+        }
     })();
 </script>
