@@ -99,7 +99,7 @@ body {
 .td-outer,
 main,
 article {
-    background-color: var(--bg-primary) !important;
+    background-color: transparent !important;
     color: var(--text-primary) !important;
 }
 
@@ -151,13 +151,17 @@ h6 {
    (Cover blocks, feature cards, etc.)
    ============================================ */
 
-.td-cover-block,
 .td-box,
-.blocks-cover,
 .blocks-lead,
-.td-cover-block--height-full,
 section[class*="blocks-"] {
     background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.td-cover-block,
+.blocks-cover,
+.td-cover-block--height-full {
+    background-color: transparent !important;
     color: var(--text-primary) !important;
 }
 
@@ -571,4 +575,31 @@ div.code-toolbar>.toolbar>.toolbar-item>span {
 
 [data-bs-theme="light"] .resume-pill-format.format-docx:hover i {
     color: #ffffff;
+}
+
+/* ============================================
+   INTERACTIVE CANVAS BACKGROUND
+   ============================================ */
+#bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.td-cover-block {
+    background-color: transparent !important;
+}
+
+.td-cover-block .td-overlay__inner,
+.td-cover-block .container,
+.td-navbar,
+.resume-pill-btn,
+.btn,
+.card {
+    position: relative;
+    z-index: 2;
 }
