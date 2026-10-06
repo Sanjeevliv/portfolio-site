@@ -92,12 +92,14 @@ linkTitle: "Home"
 
 <div class="mb-5">
   <h2 class="mb-3 pb-2 border-bottom" style="border-color: var(--border-color) !important;">About</h2>
-  <p class="fs-5" style="color: var(--text-primary); line-height: 1.7;">
-    I learn by building systems, debugging real problems, and understanding how things work underneath the abstractions. I'm particularly interested in Linux, networking, infrastructure, and distributed systems.
-  </p>
+  <div class="card p-4 border rounded-3" style="background-color: var(--bg-secondary); border-color: var(--border-color) !important;">
+    <p class="fs-5 mb-0" style="color: var(--text-primary); line-height: 1.7;">
+      I learn by building systems, debugging real problems, and understanding how things work underneath the abstractions. I'm particularly interested in Linux, networking, infrastructure, and distributed systems.
+    </p>
+  </div>
 </div>
 
-<div class="pt-4 border-top text-center" style="border-color: var(--border-color) !important;">
+<div class="card p-4 border rounded-3 text-center mb-5" style="background-color: var(--bg-secondary); border-color: var(--border-color) !important;">
   <h3 class="h5 mb-3" style="color: var(--text-secondary);">Get in Touch</h3>
   <div class="d-flex justify-content-center flex-wrap gap-4">
     <a class="text-decoration-none fs-5" href="https://mail.google.com/mail/?view=cm&fs=1&to=sanjeevsethilive@gmail.com" target="_blank" rel="noopener">
