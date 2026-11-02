@@ -49,6 +49,9 @@ params:
 # Top navigation menu
 menu:
   main:
+    - name: Lab
+      weight: 10
+      url: /lab/
     - name: Blogs
       weight: 20
       url: /blog/
