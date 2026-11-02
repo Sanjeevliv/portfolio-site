@@ -1193,6 +1193,43 @@ main[role="main"] article > .td-content,
     border-color: rgba(239, 68, 68, 0.35);
 }
 
+.lab-badge-learn {
+    background: rgba(59, 130, 246, 0.16);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.38);
+}
+
+[data-bs-theme="light"] .lab-badge-learn {
+    color: #1d4ed8;
+}
+
+.lab-badge-test {
+    background: rgba(16, 185, 129, 0.16);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.38);
+}
+
+[data-bs-theme="light"] .lab-badge-test {
+    color: #047857;
+}
+
+.lab-study-box {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--link-color);
+    border-radius: 0.5rem;
+    padding: 0.85rem 1rem;
+}
+
+.lab-study-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--link-color);
+    margin-right: 0.5rem;
+}
+
 .lab-symptom-box {
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);

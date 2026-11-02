@@ -1,8 +1,12 @@
-// Comprehensive SRE / Cisco / Systems Engineering CLI Mastery Curriculum
-// Includes Single-Command Drills, "Read the Symptom Output" Diagnostics, and Multi-Step Incident Chains
+// Incremental SRE / Cisco / Systems Engineering CLI Curriculum
+// Zero flag spoilers in prompts. Organized into 4 Incremental Levels per track:
+// Level 1: Foundation Commands
+// Level 2: Flag Composition, Filtering & Pipelines
+// Level 3: Deep Diagnostics, Kernel /proc, eBPF & Symptom Triage
+// Level 4: Multi-Step Production Incident Chains
 
 window.SRE_LAB_SESSIONS = [
-  { id: "all", title: "All Topics (Smart Mix)" },
+  { id: "all", title: "All Topics (Incremental)" },
   { id: "linux-files", title: "1. Linux Files & Text" },
   { id: "linux-proc", title: "2. Processes, Memory & /proc" },
   { id: "linux-net", title: "3. Linux Networking & Packet Capture" },
@@ -16,300 +20,124 @@ window.SRE_LAB_SESSIONS = [
 
 window.SRE_LAB_QUESTIONS = [
   // ============================================================================
-  // 1. LINUX FILES, TEXT & PERMISSIONS
+  // TRACK 1: LINUX FILES, TEXT & PERMISSIONS
   // ============================================================================
+  {
+    id: "lnx-pwd",
+    session: "linux-files",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "pwd",
+    title: "Print the current working directory",
+    prompt: "You just opened an SSH session on a worker node. Print the full absolute path of your current working directory.",
+    canonical: "pwd",
+    accepted: ["pwd", "pwd -P"],
+    grammar: [
+      { token: "pwd", desc: "Print name of current/working directory" },
+      { token: "-P", desc: "(Optional) Resolve all symlinks to the physical path" }
+    ],
+    sampleOutput: `/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs`,
+    explanation: "Use `pwd -P` when debugging symlinked deployment directories to see the real physical path on disk."
+  },
   {
     id: "lnx-ls-lah",
     session: "linux-files",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ls",
-    title: "List all files including hidden dotfiles with human-readable sizes",
-    prompt: "List all files in the current directory—including hidden dotfiles (`.` and `.env`)—in long format (`-l`) with human-readable sizes (`-h`).",
-    hint: "Combine `-l`, `-a`, and `-h` with `ls`.",
+    title: "List all files including hidden dotfiles with permissions and human-readable sizes",
+    prompt: "List all entries in the current directory—including hidden dotfiles—in long listing format with human-readable file sizes (K, M, G).",
     canonical: "ls -lah",
     accepted: ["ls -lah", "ls -l -a -h"],
     grammar: [
       { token: "ls", desc: "List directory contents" },
-      { token: "-l", desc: "Long format (permissions, owner, size, timestamp)" },
+      { token: "-l", desc: "Long format (permissions, owner, group, size, timestamp)" },
       { token: "-a", desc: "Include hidden dotfiles starting with '.'" },
-      { token: "-h", desc: "Human-readable sizes (K, M, G)" }
+      { token: "-h", desc: "Human-readable file sizes (K, M, G)" }
     ],
     sampleOutput: `drwxr-xr-x  6 sanjeev staff 192B Nov  2 18:10 .
 -rw-------  1 sanjeev staff 1.4K Nov  2 17:45 .env
 -rwxr-xr-x  1 sanjeev staff 8.2M Nov  2 18:09 frametap`,
-    explanation: "Checking permissions (`-rwxr-xr-x`), ownership, and hidden `.env` or `.kube` files is the first step in any unfamiliar directory."
+    explanation: "Inspecting permissions, ownership, and hidden `.env` or `.kube` files is the first step in any unfamiliar directory."
   },
   {
-    id: "lnx-ls-lt",
+    id: "lnx-ls-lth",
     session: "linux-files",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ls",
-    title: "List files sorted by most recently modified first",
-    prompt: "List files in `/var/log` in long format (`-l`) sorted by modification time (`-t`, newest first) with human-readable sizes (`-h`).",
-    hint: "Use `ls -lth /var/log`.",
+    title: "List log files sorted by most recently modified first",
+    prompt: "List the files inside `/var/log` in long format with human-readable sizes, sorted by modification timestamp so the newest files appear at the top.",
     canonical: "ls -lth /var/log",
     accepted: ["ls -lth /var/log", "ls -lt /var/log", "ls -lth /var/log/"],
     grammar: [
-      { token: "ls -l", desc: "Long listing format" },
+      { token: "ls -l", desc: "Long format" },
       { token: "-t", desc: "Sort by modification time, newest first" },
-      { token: "-h", desc: "Human-readable file sizes" }
+      { token: "-h", desc: "Human-readable sizes" }
     ],
     sampleOutput: `-rw-r----- 1 syslog adm 4.2M Nov  2 21:59 syslog
 -rw-r----- 1 syslog adm 1.8M Nov  2 21:58 kern.log`,
     explanation: "`ls -lth` immediately shows which log file was written to most recently during an active incident."
   },
   {
-    id: "lnx-pwd",
+    id: "lnx-head-lines",
     session: "linux-files",
-    difficulty: "Core",
-    tool: "pwd",
-    title: "Print the current working directory path",
-    prompt: "Print the full absolute path of your current working directory.",
-    hint: "Use `pwd`.",
-    canonical: "pwd",
-    accepted: ["pwd", "pwd -P"],
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "head",
+    title: "Print the first 20 lines of a large log file",
+    prompt: "Print only the first `20` lines of `/var/log/syslog` without loading the entire file into an editor.",
+    canonical: "head -n 20 /var/log/syslog",
+    accepted: ["head -n 20 /var/log/syslog", "head -20 /var/log/syslog", "head -n20 /var/log/syslog"],
     grammar: [
-      { token: "pwd", desc: "Print working directory" },
-      { token: "-P", desc: "(Optional) Resolve symlinks to physical path" }
+      { token: "head", desc: "Output the first part of files" },
+      { token: "-n 20", desc: "Print the first 20 lines" }
     ],
-    sampleOutput: `/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs`,
-    explanation: "Use `pwd -P` when debugging symlinked release directories to see the real physical path on disk."
-  },
-  {
-    id: "lnx-find-logs",
-    session: "linux-files",
-    difficulty: "Core",
-    tool: "find",
-    title: "Find all .log files inside /var/log",
-    prompt: "Search recursively inside `/var/log` for regular files (`-type f`) whose name ends with `.log` (`-name \"*.log\"`).",
-    hint: "Use `find /var/log -type f -name \"*.log\"`.",
-    canonical: "find /var/log -type f -name \"*.log\"",
-    accepted: [
-      "find /var/log -type f -name \"*.log\"",
-      "find /var/log -name \"*.log\" -type f",
-      "find /var/log -name *.log"
-    ],
-    grammar: [
-      { token: "find /var/log", desc: "Recursively search /var/log" },
-      { token: "-type f", desc: "Match only regular files" },
-      { token: "-name \"*.log\"", desc: "Match filenames ending in .log" }
-    ],
-    sampleOutput: `/var/log/kern.log
-/var/log/nginx/error.log`,
-    explanation: "Always quote glob patterns (`\"*.log\"`) so the shell doesn't expand `*` before invoking `find`."
-  },
-  {
-    id: "lnx-find-large",
-    session: "linux-files",
-    difficulty: "Intermediate",
-    tool: "find",
-    title: "Find files larger than 100 Megabytes across /var",
-    prompt: "A disk usage alert fired. Find all regular files (`-type f`) under `/var` strictly larger than 100 Megabytes (`-size +100M`).",
-    hint: "Use `find /var -type f -size +100M`.",
-    canonical: "find /var -type f -size +100M",
-    accepted: [
-      "find /var -type f -size +100M",
-      "find /var -size +100M -type f",
-      "find /var -size +100M"
-    ],
-    grammar: [
-      { token: "find /var", desc: "Search directory tree /var" },
-      { token: "-type f", desc: "Regular files only" },
-      { token: "-size +100M", desc: "Strictly greater than 100 MiB" }
-    ],
-    sampleOutput: `/var/log/journal/a8b1c3/system.journal
-/var/lib/docker/containers/9f8e1a/9f8e1a-json.log`,
-    explanation: "Unrotated container JSON logs or systemd journals under `/var` are a top cause of Kubernetes node `DiskPressure`."
-  },
-  {
-    id: "lnx-find-mtime",
-    session: "linux-files",
-    difficulty: "Intermediate",
-    tool: "find",
-    title: "Find configuration files modified in the last 24 hours",
-    prompt: "Something changed on the host today and broke networking. Find all regular files (`-type f`) inside `/etc` modified within the last 1 day (`-mtime -1`).",
-    hint: "Use `find /etc -type f -mtime -1`.",
-    canonical: "find /etc -type f -mtime -1",
-    accepted: ["find /etc -type f -mtime -1", "find /etc -mtime -1 -type f", "find /etc -mtime -1"],
-    grammar: [
-      { token: "find /etc", desc: "Search under /etc" },
-      { token: "-type f", desc: "Regular files only" },
-      { token: "-mtime -1", desc: "Modified less than 24 hours ago (use -mmin -60 for last 60 minutes)" }
-    ],
-    sampleOutput: `/etc/sysctl.d/99-kubernetes-cri.conf
-/etc/cni/net.d/05-cilium.conflist`,
-    explanation: "When a server suddenly misbehaves and nobody admits to changing config, `find /etc -type f -mtime -1` (or `-mmin -30`) catches recent edits immediately."
-  },
-  {
-    id: "lnx-grep-error",
-    session: "linux-files",
-    difficulty: "Core",
-    tool: "grep",
-    title: "Search recursively and case-insensitively for 'error' with line numbers",
-    prompt: "Search recursively (`-r`) and case-insensitively (`-i`) with line numbers (`-n`) for `error` inside `/var/log/nginx`.",
-    hint: "Combine `-r`, `-i`, and `-n` with `grep`.",
-    canonical: "grep -rin \"error\" /var/log/nginx",
-    accepted: ["grep -rin \"error\" /var/log/nginx", "grep -rin error /var/log/nginx"],
-    grammar: [
-      { token: "grep", desc: "Search text patterns" },
-      { token: "-r", desc: "Recursive directory traversal" },
-      { token: "-i", desc: "Case-insensitive match" },
-      { token: "-n", desc: "Print 1-based line numbers" }
-    ],
-    sampleOutput: `/var/log/nginx/error.log:42:2026/11/02 [error] connect() failed (111: Connection refused)`,
-    explanation: "`grep -rin` is the go-to flag combination for hunting errors or config keys across a directory tree."
-  },
-  {
-    id: "lnx-grep-invert",
-    session: "linux-files",
-    difficulty: "Core",
-    tool: "grep",
-    title: "Filter out comments and empty lines from a config file using grep",
-    prompt: "Use extended regex (`-E`) and invert-match (`-v`) with `grep` to print all lines in `/etc/ssh/sshd_config` that do NOT match `'^(#|$)'` (comments or blank lines).",
-    hint: "Use `grep -Ev '^(#|$)' /etc/ssh/sshd_config`.",
-    canonical: "grep -Ev '^(#|$)' /etc/ssh/sshd_config",
-    accepted: [
-      "grep -Ev '^(#|$)' /etc/ssh/sshd_config",
-      "grep -vE '^(#|$)' /etc/ssh/sshd_config",
-      "grep -v '^#' /etc/ssh/sshd_config"
-    ],
-    grammar: [
-      { token: "-E", desc: "Extended regular expressions (enables | and grouping without backslashes)" },
-      { token: "-v", desc: "Invert match: select non-matching lines" },
-      { token: "'^(#|$)'", desc: "Match lines starting with # or empty lines" }
-    ],
-    sampleOutput: `Port 22
-PermitRootLogin no
-PubkeyAuthentication yes`,
-    explanation: "`grep -Ev '^(#|$)' <file>` strips 500 lines of boilerplate comments down to the 10 active directives."
-  },
-  {
-    id: "lnx-sed-replace",
-    session: "linux-files",
-    difficulty: "Intermediate",
-    tool: "sed",
-    title: "Replace all occurrences of a string in-place using sed",
-    prompt: "Update `config.yaml` in-place (`-i`) by replacing every occurrence (`g`) of `localhost` with `10.96.0.1`.",
-    hint: "Use `sed -i 's/localhost/10.96.0.1/g' config.yaml`.",
-    canonical: "sed -i 's/localhost/10.96.0.1/g' config.yaml",
-    accepted: ["sed -i 's/localhost/10.96.0.1/g' config.yaml"],
-    grammar: [
-      { token: "sed -i", desc: "Edit file in-place (GNU sed)" },
-      { token: "'s/localhost/10.96.0.1/g'", desc: "Substitute (s) globally (g) on each line" }
-    ],
-    sampleOutput: `(config.yaml updated in-place)`,
-    explanation: "Without the trailing `g` flag, `sed` only replaces the first match on each line."
-  },
-  {
-    id: "lnx-awk-columns",
-    session: "linux-files",
-    difficulty: "Core",
-    tool: "awk",
-    title: "Extract the 1st and 9th whitespace-separated columns from access.log",
-    prompt: "Use `awk` to print column `$1` (client IP) and column `$9` (HTTP status code) from `access.log`.",
-    hint: "Use `awk '{print $1, $9}' access.log`.",
-    canonical: "awk '{print $1, $9}' access.log",
-    accepted: ["awk '{print $1, $9}' access.log", "awk '{ print $1, $9 }' access.log"],
-    grammar: [
-      { token: "awk", desc: "Field-oriented pattern scanning language" },
-      { token: "'{print $1, $9}'", desc: "Print 1st and 9th whitespace-delimited fields" }
-    ],
-    sampleOutput: `10.244.1.18 502
-172.16.0.5 200`,
-    explanation: "You can also filter rows by condition in `awk`, e.g., `awk '$9 == 502 {print $1}' access.log` to print only client IPs receiving HTTP 502s!"
-  },
-  {
-    id: "lnx-cut-passwd",
-    session: "linux-files",
-    difficulty: "Core",
-    tool: "cut",
-    title: "Extract usernames and login shells from /etc/passwd",
-    prompt: "Use `cut` with delimiter `:` (`-d:`) to extract fields 1 and 7 (`-f1,7`) from `/etc/passwd`.",
-    hint: "Use `cut -d: -f1,7 /etc/passwd`.",
-    canonical: "cut -d: -f1,7 /etc/passwd",
-    accepted: ["cut -d: -f1,7 /etc/passwd", "cut -d ':' -f 1,7 /etc/passwd", "cut -f1,7 -d: /etc/passwd"],
-    grammar: [
-      { token: "cut", desc: "Extract sections from each line" },
-      { token: "-d:", desc: "Use ':' as field delimiter" },
-      { token: "-f1,7", desc: "Fields 1 (user) and 7 (shell)" }
-    ],
-    sampleOutput: `root:/bin/bash
-sshd:/usr/sbin/nologin`,
-    explanation: "`cut` is fast and exact for strictly delimited files like `/etc/passwd` or CSVs."
-  },
-  {
-    id: "lnx-sort-uniq-pipeline",
-    session: "linux-files",
-    difficulty: "Intermediate",
-    tool: "sort / uniq",
-    title: "Count and rank unique IP addresses in a file",
-    prompt: "Pipe `sort ips.txt` into `uniq -c` and `sort -nr` to count occurrences of each IP and rank them highest-first.",
-    hint: "Use `sort ips.txt | uniq -c | sort -nr`.",
-    canonical: "sort ips.txt | uniq -c | sort -nr",
-    accepted: [
-      "sort ips.txt | uniq -c | sort -nr",
-      "cat ips.txt | sort | uniq -c | sort -nr"
-    ],
-    grammar: [
-      { token: "sort ips.txt", desc: "Group identical lines together" },
-      { token: "uniq -c", desc: "Count adjacent identical lines" },
-      { token: "sort -nr", desc: "Sort numerically (-n) in reverse/descending order (-r)" }
-    ],
-    sampleOutput: `   1482 10.244.2.91
-    319 10.244.1.14`,
-    explanation: "`uniq` only deduplicates adjacent lines, so you must always `sort` before `uniq -c`."
-  },
-  {
-    id: "lnx-xargs-rm",
-    session: "linux-files",
-    difficulty: "Intermediate",
-    tool: "xargs",
-    title: "Safely delete NUL-delimited files found by find using xargs",
-    prompt: "Find `.tmp` files in `/tmp` with `-print0` and pipe to `xargs -0 rm -f`.",
-    hint: "Use `find /tmp -name \"*.tmp\" -print0 | xargs -0 rm -f`.",
-    canonical: "find /tmp -name \"*.tmp\" -print0 | xargs -0 rm -f",
-    accepted: [
-      "find /tmp -name \"*.tmp\" -print0 | xargs -0 rm -f",
-      "find /tmp -type f -name \"*.tmp\" -print0 | xargs -0 rm -f"
-    ],
-    grammar: [
-      { token: "-print0", desc: "Delimit filenames with NUL byte instead of newline" },
-      { token: "xargs -0 rm -f", desc: "Read NUL-delimited paths and batch them into rm -f" }
-    ],
-    sampleOutput: `(Safely deletes hundreds of thousands of .tmp files without 'Argument list too long')`,
-    explanation: "Prevents both whitespace-splitting bugs and kernel `E2BIG` (`Argument list too long`) errors."
+    sampleOutput: `Nov  2 00:00:01 node-1 systemd[1]: Started Rotate log files.`,
+    explanation: "Quickly previews file headers or CSV/log schemas without paging through gigabytes of text."
   },
   {
     id: "lnx-tail-f",
     session: "linux-files",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "tail",
-    title: "Follow the last 50 lines of a live log file in real time",
-    prompt: "Output the last `50` lines (`-n 50`) of `/var/log/syslog` and follow (`-f`) new lines as they are appended.",
-    hint: "Use `tail -n 50 -f /var/log/syslog` (or `tail -f -n 50 /var/log/syslog`).",
-    canonical: "tail -n 50 -f /var/log/syslog",
-    accepted: [
-      "tail -n 50 -f /var/log/syslog",
-      "tail -f -n 50 /var/log/syslog",
-      "tail -50f /var/log/syslog",
-      "tail -fn 50 /var/log/syslog"
-    ],
+    title: "Stream new lines appended to a log file in real time",
+    prompt: "Follow `/var/log/syslog` in real time so new log lines are printed to your terminal as they are written.",
+    canonical: "tail -f /var/log/syslog",
+    accepted: ["tail -f /var/log/syslog", "tail -F /var/log/syslog"],
     grammar: [
-      { token: "tail", desc: "Output the last part of files" },
-      { token: "-n 50", desc: "Show the last 50 lines" },
-      { token: "-f", desc: "Follow file descriptor as file grows" }
+      { token: "tail", desc: "Output the end of a file" },
+      { token: "-f", desc: "Follow appended data as the file grows (use -F to survive log rotation)" }
     ],
     sampleOutput: `Nov  2 22:01:04 node-1 kernel: [84120.11] device veth4a1b entered promiscuous mode`,
-    explanation: "Pro tip: `tail -F` (uppercase `-F`) tracks the filename and retries if the log file is rotated (`mv`/`unlink`) by `logrotate`!"
+    explanation: "Use uppercase `tail -F` when watching logs managed by `logrotate` so `tail` reopens the new file if the old one is rotated."
   },
   {
-    id: "lnx-chmod-exec",
+    id: "lnx-wc-lines",
     session: "linux-files",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "wc",
+    title: "Count the total number of lines in a file",
+    prompt: "Count only the number of newline-separated lines in `access.log`.",
+    canonical: "wc -l access.log",
+    accepted: ["wc -l access.log"],
+    grammar: [
+      { token: "wc", desc: "Print newline, word, and byte counts" },
+      { token: "-l", desc: "Print only the line count" }
+    ],
+    sampleOutput: `482910 access.log`,
+    explanation: "Often piped after `grep` or `ss` (e.g., `ss -tan | wc -l`) to measure connection or error counts."
+  },
+  {
+    id: "lnx-chmod-755",
+    session: "linux-files",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "chmod",
-    title: "Grant owner read/write/execute and group/others read/execute (0755) on a binary",
-    prompt: "Set octal permissions `755` (`rwxr-xr-x`) on the binary `./frametap` so it can be executed.",
-    hint: "Use `chmod 755 ./frametap` (or `chmod +x ./frametap`).",
+    title: "Set rwxr-xr-x (0755) permissions on a compiled Go binary",
+    prompt: "Set octal permissions `755` (owner read/write/execute, group and others read/execute) on `./frametap`.",
     canonical: "chmod 755 ./frametap",
     accepted: ["chmod 755 ./frametap", "chmod 755 frametap", "chmod +x ./frametap", "chmod +x frametap", "chmod 0755 ./frametap"],
     grammar: [
@@ -317,16 +145,51 @@ sshd:/usr/sbin/nologin`,
       { token: "755", desc: "Owner=7 (rwx), Group=5 (r-x), Others=5 (r-x)" }
     ],
     sampleOutput: `-rwxr-xr-x 1 sanjeev staff 8.2M Nov  2 18:09 frametap`,
-    explanation: "For sensitive SSH keys (`~/.ssh/id_ed25519`), SSH requires `chmod 600` (`rw-------`) and will refuse the key if group/others have read access."
+    explanation: "`755` is standard for executable binaries and directories; `600` (`rw-------`) is required for private keys like `~/.ssh/id_ed25519`."
+  },
+  {
+    id: "lnx-chown-recursive",
+    session: "linux-files",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "chown",
+    title: "Recursively change ownership of a data directory to user and group 'prometheus'",
+    prompt: "Change the owner and group of `/var/lib/prometheus` and all files inside it recursively to `prometheus:prometheus`.",
+    canonical: "chown -R prometheus:prometheus /var/lib/prometheus",
+    accepted: ["chown -R prometheus:prometheus /var/lib/prometheus", "chown -R prometheus:prometheus /var/lib/prometheus/"],
+    grammar: [
+      { token: "chown", desc: "Change file owner and group" },
+      { token: "-R", desc: "Operate on files and directories recursively" },
+      { token: "prometheus:prometheus", desc: "<user>:<group>" }
+    ],
+    sampleOutput: `(Ownership of /var/lib/prometheus tree updated to prometheus:prometheus)`,
+    explanation: "Container volumes mounted from the host frequently fail with `Permission denied` when the container runs as a non-root UID and the host directory is owned by `root:root`."
+  },
+  {
+    id: "lnx-ln-symlink",
+    session: "linux-files",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "ln",
+    title: "Create a symbolic link pointing to an nginx site configuration",
+    prompt: "Create a symbolic (soft) link at `/etc/nginx/sites-enabled/app.conf` that points to `/etc/nginx/sites-available/app.conf`.",
+    canonical: "ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/app.conf",
+    accepted: ["ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/app.conf"],
+    grammar: [
+      { token: "ln -s", desc: "Create a symbolic link instead of a hard link" },
+      { token: "<target> <link_name>", desc: "Source path first, destination symlink path second" }
+    ],
+    sampleOutput: `lrwxrwxrwx 1 root root 36 Nov  2 22:10 /etc/nginx/sites-enabled/app.conf -> /etc/nginx/sites-available/app.conf`,
+    explanation: "Remember the argument order of `ln -s <target> <link>` matches `cp <source> <dest>`."
   },
   {
     id: "lnx-tar-extract",
     session: "linux-files",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "tar",
-    title: "Extract a .tar.gz archive in the current directory",
-    prompt: "Extract (`-x`) the gzip-compressed (`-z`) archive `cilium-linux-amd64.tar.gz` (`-f cilium-linux-amd64.tar.gz`) verbosely (`-v`).",
-    hint: "Use `tar -xzvf cilium-linux-amd64.tar.gz`.",
+    title: "Extract a gzip-compressed .tar.gz archive verbosely",
+    prompt: "Extract the gzip-compressed archive `cilium-linux-amd64.tar.gz` in the current directory with verbose output.",
     canonical: "tar -xzvf cilium-linux-amd64.tar.gz",
     accepted: [
       "tar -xzvf cilium-linux-amd64.tar.gz",
@@ -335,552 +198,770 @@ sshd:/usr/sbin/nologin`,
       "tar xzvf cilium-linux-amd64.tar.gz"
     ],
     grammar: [
-      { token: "-x", desc: "Extract files from an archive" },
-      { token: "-z", desc: "Filter archive through gzip" },
-      { token: "-v", desc: "Verbosely list files processed" },
-      { token: "-f <file>", desc: "Use archive file (must come immediately before the filename)" }
+      { token: "-x", desc: "Extract archive" },
+      { token: "-z", desc: "Decompress with gzip" },
+      { token: "-v", desc: "Verbose file list" },
+      { token: "-f", desc: "Archive filename follows immediately" }
     ],
     sampleOutput: `cilium`,
-    explanation: "To create a `.tar.gz` archive instead, swap `-x` (extract) with `-c` (create): `tar -czvf logs.tar.gz /var/log/nginx`."
+    explanation: "To create a `.tar.gz` archive instead, replace `-x` with `-c`: `tar -czvf archive.tar.gz <dir>`."
+  },
+  {
+    id: "lnx-find-logs",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "find",
+    title: "Find all regular files ending in .log inside /var/log",
+    prompt: "Search recursively inside `/var/log` for regular files (excluding directories and symlinks) whose filename ends with `.log`.",
+    canonical: "find /var/log -type f -name \"*.log\"",
+    accepted: [
+      "find /var/log -type f -name \"*.log\"",
+      "find /var/log -name \"*.log\" -type f",
+      "find /var/log -name *.log"
+    ],
+    grammar: [
+      { token: "find /var/log", desc: "Starting directory" },
+      { token: "-type f", desc: "Match regular files only" },
+      { token: "-name \"*.log\"", desc: "Match filenames ending with .log" }
+    ],
+    sampleOutput: `/var/log/kern.log
+/var/log/nginx/error.log`,
+    explanation: "Always quote glob patterns (`\"*.log\"`) so your shell does not expand `*` before invoking `find`."
+  },
+  {
+    id: "lnx-find-large",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "find",
+    title: "Find regular files strictly larger than 100 Megabytes under /var",
+    prompt: "A Kubernetes node triggered a `DiskPressure` alert. Search `/var` recursively for regular files strictly larger than `100M`.",
+    canonical: "find /var -type f -size +100M",
+    accepted: [
+      "find /var -type f -size +100M",
+      "find /var -size +100M -type f",
+      "find /var -size +100M"
+    ],
+    grammar: [
+      { token: "-type f", desc: "Regular files only" },
+      { token: "-size +100M", desc: "Files strictly greater than 100 Megabytes" }
+    ],
+    sampleOutput: `/var/log/journal/a8b1c3/system.journal
+/var/lib/docker/containers/9f8e1a/9f8e1a-json.log`,
+    explanation: "Unrotated container JSON logs or systemd journals under `/var` are the #1 cause of node `DiskPressure`."
+  },
+  {
+    id: "lnx-find-mtime",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "find",
+    title: "Find configuration files in /etc modified within the last 24 hours",
+    prompt: "A server started misbehaving today after an undocumented config change. Find all regular files under `/etc` modified less than `1` day ago.",
+    canonical: "find /etc -type f -mtime -1",
+    accepted: ["find /etc -type f -mtime -1", "find /etc -mtime -1 -type f", "find /etc -mtime -1"],
+    grammar: [
+      { token: "find /etc -type f", desc: "Search regular files in /etc" },
+      { token: "-mtime -1", desc: "Modified within the last 24 hours (use -mmin -60 for last 60 minutes)" }
+    ],
+    sampleOutput: `/etc/sysctl.d/99-kubernetes-cri.conf
+/etc/cni/net.d/05-cilium.conflist`,
+    explanation: "When someone edits a host config file manually and doesn't document it, `find /etc -type f -mtime -1` catches the exact file."
+  },
+  {
+    id: "lnx-grep-error",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "grep",
+    title: "Search recursively and case-insensitively for 'error' with line numbers",
+    prompt: "Search all files inside `/var/log/nginx` and its subdirectories for the word `error` (ignoring case) and prefix each matching line with its line number.",
+    canonical: "grep -rin \"error\" /var/log/nginx",
+    accepted: ["grep -rin \"error\" /var/log/nginx", "grep -rin error /var/log/nginx"],
+    grammar: [
+      { token: "-r", desc: "Search directories recursively" },
+      { token: "-i", desc: "Case-insensitive matching (error, ERROR, Error)" },
+      { token: "-n", desc: "Include 1-based line numbers" }
+    ],
+    sampleOutput: `/var/log/nginx/error.log:42:2026/11/02 [error] connect() failed (111: Connection refused)`,
+    explanation: "`grep -rin` is essential muscle memory for searching codebases and `/var/log` trees."
+  },
+  {
+    id: "lnx-grep-invert",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "grep",
+    title: "Strip commented and empty lines from a config file",
+    prompt: "Print all lines in `/etc/ssh/sshd_config` that do NOT match the extended regular expression `'^(#|$)'` (i.e. exclude comment lines and blank lines).",
+    canonical: "grep -Ev '^(#|$)' /etc/ssh/sshd_config",
+    accepted: [
+      "grep -Ev '^(#|$)' /etc/ssh/sshd_config",
+      "grep -vE '^(#|$)' /etc/ssh/sshd_config",
+      "grep -v '^#' /etc/ssh/sshd_config"
+    ],
+    grammar: [
+      { token: "-E", desc: "Extended regular expression syntax" },
+      { token: "-v", desc: "Invert match (print lines that do NOT match)" },
+      { token: "'^(#|$)'", desc: "Lines starting with '#' or empty lines" }
+    ],
+    sampleOutput: `Port 22
+PermitRootLogin no
+PubkeyAuthentication yes`,
+    explanation: "Instantly distills a 500-line default config file down to the active non-comment directives."
+  },
+  {
+    id: "lnx-grep-context",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "grep",
+    title: "Print 3 lines of context before and after every 'panic:' in app.log",
+    prompt: "Search `app.log` for `panic:` and include `3` lines of surrounding context both before and after each match.",
+    canonical: "grep -C 3 \"panic:\" app.log",
+    accepted: [
+      "grep -C 3 \"panic:\" app.log",
+      "grep -C 3 panic: app.log",
+      "grep -C3 panic: app.log",
+      "grep -C3 \"panic:\" app.log"
+    ],
+    grammar: [
+      { token: "-C 3", desc: "Print 3 lines of leading and trailing context (use -B 3 for before, -A 3 for after)" }
+    ],
+    sampleOutput: `2026-11-02T18:10:01Z INFO decoding packet len=64
+panic: runtime error: slice bounds out of range [:42] with length 14
+goroutine 18 [running]:`,
+    explanation: "Single-line grep matches often miss stack traces; `-A 10` (after) or `-C 3` (around) captures the surrounding crash context."
+  },
+  {
+    id: "lnx-sed-replace",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "sed",
+    title: "Replace all occurrences of an IP address in-place across a file",
+    prompt: "Modify `config.yaml` in-place by substituting every occurrence of `localhost` with `10.96.0.1` on every line.",
+    canonical: "sed -i 's/localhost/10.96.0.1/g' config.yaml",
+    accepted: ["sed -i 's/localhost/10.96.0.1/g' config.yaml"],
+    grammar: [
+      { token: "sed -i", desc: "Edit file in-place" },
+      { token: "'s/localhost/10.96.0.1/g'", desc: "Substitute (s) all matches globally (g) on each line" }
+    ],
+    sampleOutput: `(config.yaml updated in-place)`,
+    explanation: "Without the trailing `g` modifier, `sed` only replaces the first occurrence on each line."
+  },
+  {
+    id: "lnx-awk-columns",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "awk",
+    title: "Extract the 1st and 9th whitespace-delimited columns from access.log",
+    prompt: "Print the 1st column (client IP) and 9th column (HTTP status code) from `access.log` using `awk`.",
+    canonical: "awk '{print $1, $9}' access.log",
+    accepted: ["awk '{print $1, $9}' access.log", "awk '{ print $1, $9 }' access.log"],
+    grammar: [
+      { token: "awk", desc: "Pattern scanning and text processing language" },
+      { token: "'{print $1, $9}'", desc: "Output field 1 and field 9 separated by a space" }
+    ],
+    sampleOutput: `10.244.1.18 502
+172.16.0.5 200`,
+    explanation: "`awk` splits on any run of whitespace automatically, making it ideal for log parsing."
+  },
+  {
+    id: "lnx-awk-filter-500",
+    session: "linux-files",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "awk",
+    title: "Print client IPs only for lines where HTTP status (column 9) equals 500",
+    prompt: "In `access.log`, column 1 is the client IP and column 9 is the HTTP status code. Use `awk` to print `$1` ONLY on lines where `$9 == 500`.",
+    canonical: "awk '$9 == 500 {print $1}' access.log",
+    accepted: [
+      "awk '$9 == 500 {print $1}' access.log",
+      "awk '$9 == \"500\" {print $1}' access.log",
+      "awk '$9==500 {print $1}' access.log"
+    ],
+    grammar: [
+      { token: "'$9 == 500 {print $1}'", desc: "Condition ($9 == 500) before the action block ({print $1})" }
+    ],
+    sampleOutput: `10.244.1.18
+10.244.1.18
+192.168.4.21`,
+    explanation: "Using `awk` pattern-action blocks avoids unnecessary `grep | awk` pipes and prevents false matches when `500` appears in byte sizes or URLs."
+  },
+  {
+    id: "lnx-cut-passwd",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "cut",
+    title: "Extract usernames and login shells from colon-delimited /etc/passwd",
+    prompt: "Extract field `1` (username) and field `7` (login shell) from the colon-delimited file `/etc/passwd`.",
+    canonical: "cut -d: -f1,7 /etc/passwd",
+    accepted: ["cut -d: -f1,7 /etc/passwd", "cut -d ':' -f 1,7 /etc/passwd", "cut -f1,7 -d: /etc/passwd"],
+    grammar: [
+      { token: "-d:", desc: "Use ':' as the field delimiter" },
+      { token: "-f1,7", desc: "Select fields 1 and 7" }
+    ],
+    sampleOutput: `root:/bin/bash
+sshd:/usr/sbin/nologin`,
+    explanation: "`cut` is purpose-built for fixed single-character delimiters like `:` or `,`."
+  },
+  {
+    id: "lnx-sort-uniq-pipeline",
+    session: "linux-files",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "sort / uniq",
+    title: "Count and rank unique IP addresses from highest frequency to lowest",
+    prompt: "Given `ips.txt` (one IP per line), build a pipeline using `sort` and `uniq` that counts how many times each unique IP appears and sorts the counts in descending numeric order.",
+    canonical: "sort ips.txt | uniq -c | sort -nr",
+    accepted: [
+      "sort ips.txt | uniq -c | sort -nr",
+      "cat ips.txt | sort | uniq -c | sort -nr"
+    ],
+    grammar: [
+      { token: "sort ips.txt", desc: "Sort lines so identical IPs are adjacent" },
+      { token: "uniq -c", desc: "Collapse adjacent duplicates and prefix each with its occurrence count" },
+      { token: "sort -nr", desc: "Sort numerically (-n) in reverse/descending order (-r)" }
+    ],
+    sampleOutput: `   1482 10.244.2.91
+    319 10.244.1.14`,
+    explanation: "`uniq` only compares adjacent lines, so sorting first is mandatory."
+  },
+  {
+    id: "lnx-xargs-rm",
+    session: "linux-files",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "xargs",
+    title: "Delete hundreds of thousands of .tmp files safely using NUL delimiters",
+    prompt: "`rm /tmp/*.tmp` failed with `Argument list too long`. Pipe `find /tmp -name \"*.tmp\"` using NUL-byte delimiters into `xargs` to run `rm -f` safely.",
+    canonical: "find /tmp -name \"*.tmp\" -print0 | xargs -0 rm -f",
+    accepted: [
+      "find /tmp -name \"*.tmp\" -print0 | xargs -0 rm -f",
+      "find /tmp -type f -name \"*.tmp\" -print0 | xargs -0 rm -f"
+    ],
+    grammar: [
+      { token: "-print0", desc: "Separate found paths with NUL (\\0) bytes instead of newlines" },
+      { token: "xargs -0 rm -f", desc: "Read NUL-delimited input and invoke rm -f in safe argument batches" }
+    ],
+    sampleOutput: `(Deletes all .tmp files in batches without hitting kernel E2BIG limits)`,
+    explanation: "`-print0 | xargs -0` handles both millions of files and filenames containing spaces or newlines safely."
   },
 
   // ============================================================================
-  // 2. LINUX PROCESSES, MEMORY, CPU & /proc
+  // TRACK 2: LINUX PROCESSES, MEMORY, CPU & /proc INTERNALS
   // ============================================================================
   {
     id: "proc-ps-aux",
     session: "linux-proc",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ps",
-    title: "List all running processes on the system with CPU and memory usage",
-    prompt: "Display a snapshot of every running process across all users (`aux`), showing PID, %CPU, %MEM, RSS, STAT, and command.",
-    hint: "Use `ps aux`.",
+    title: "List all running processes across all users with CPU and memory columns",
+    prompt: "Display a snapshot of every running process on the system across all users in BSD user-oriented format (showing PID, %CPU, %MEM, RSS, STAT, and command).",
     canonical: "ps aux",
     accepted: ["ps aux", "ps -ef"],
     grammar: [
-      { token: "ps", desc: "Report a snapshot of current processes" },
-      { token: "aux", desc: "All users (a), user-oriented format (u), include daemons without a tty (x)" }
+      { token: "ps", desc: "Process status snapshot" },
+      { token: "aux", desc: "All users (a), user-oriented columns (u), include processes without a controlling tty (x)" }
     ],
     sampleOutput: `USER   PID %CPU %MEM    VSZ   RSS TTY   STAT START TIME COMMAND
 root  1184  3.4  2.8 184210 11520 ?     Ssl  Oct29 84:12 /usr/bin/containerd`,
-    explanation: "In the `STAT` column: `R` = running, `S` = sleeping, `D` = uninterruptible kernel I/O sleep, `Z` = zombie process."
-  },
-  {
-    id: "proc-ps-sort-mem",
-    session: "linux-proc",
-    difficulty: "Intermediate",
-    tool: "ps",
-    title: "List all processes sorted by highest memory consumption first",
-    prompt: "A node is running low on RAM. Run `ps aux` sorted in descending order of memory usage (`--sort=-%mem`).",
-    hint: "Use `ps aux --sort=-%mem`.",
-    canonical: "ps aux --sort=-%mem",
-    accepted: ["ps aux --sort=-%mem", "ps aux --sort=-rss"],
-    grammar: [
-      { token: "ps aux", desc: "List all processes" },
-      { token: "--sort=-%mem", desc: "Sort descending (-) by %MEM (or use -%cpu for CPU)" }
-    ],
-    sampleOutput: `USER   PID %CPU %MEM     VSZ    RSS TTY  STAT START TIME COMMAND
-root  4912 42.1 68.4 9841200 541200 ?    Sl   19:02 12:11 /usr/local/bin/prometheus`,
-    explanation: "Piping `ps aux --sort=-%mem | head -n 10` gives you the top 9 memory hogs on a server in one non-interactive command."
+    explanation: "Check the `STAT` column: `R` = running, `S` = interruptible sleep, `D` = uninterruptible kernel I/O sleep, `Z` = zombie."
   },
   {
     id: "proc-top",
     session: "linux-proc",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "top",
-    title: "Launch real-time interactive CPU and memory process monitor",
-    prompt: "Run the standard real-time interactive process monitor to inspect load averages and CPU states (`us`, `sy`, `wa`, `si`).",
-    hint: "Use `top`.",
+    title: "Launch the standard real-time interactive CPU and memory monitor",
+    prompt: "Start the standard interactive terminal process monitor to inspect real-time CPU states (`us`, `sy`, `wa`, `si`) and memory usage.",
     canonical: "top",
     accepted: ["top", "htop"],
     grammar: [
-      { token: "top", desc: "Real-time process and CPU/memory telemetry viewer" }
+      { token: "top", desc: "Interactive real-time system and process monitor" }
     ],
     sampleOutput: `%Cpu(s): 14.2 us,  8.5 sy,  0.0 ni, 74.1 id,  0.2 wa,  0.0 hi,  3.0 si`,
-    explanation: "Inside `top`, press `1` to expand individual CPU cores, `P` to sort by CPU, and `M` to sort by Memory."
+    explanation: "High `wa` means disk I/O wait bottleneck; high `si` means heavy software interrupt processing (such as network packet RX)."
   },
   {
     id: "proc-free-h",
     session: "linux-proc",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "free",
-    title: "Check system RAM, page cache, and swap usage in human-readable units",
-    prompt: "Display total, used, free, buff/cache, and available memory in human-readable units (`-h`).",
-    hint: "Use `free -h`.",
+    title: "Check system RAM, page cache, and available memory in human-readable units",
+    prompt: "Display total, used, free, buff/cache, and available system memory scaled to human-readable units (MiB/GiB).",
     canonical: "free -h",
     accepted: ["free -h", "free -m"],
     grammar: [
-      { token: "free", desc: "Display amount of free and used system memory" },
+      { token: "free", desc: "Display free and used memory" },
       { token: "-h", desc: "Human-readable units (Gi/Mi)" }
     ],
     sampleOutput: `               total   used   free  shared  buff/cache  available
 Mem:            15Gi  4.2Gi  400Mi   124Mi        10Gi       10Gi`,
-    explanation: "Always check `available` (not `free`), because Linux borrows unused RAM for disk page cache (`buff/cache`) and reclaims it on demand."
+    explanation: "Focus on the `available` column—Linux uses spare RAM for disk `buff/cache` and reclaims it automatically when applications allocate memory."
   },
   {
     id: "proc-df-h",
     session: "linux-proc",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "df",
-    title: "Check mounted filesystem disk space usage",
-    prompt: "Display available and used disk space across all mounted filesystems in human-readable format (`-h`).",
-    hint: "Use `df -h`.",
+    title: "Check mounted filesystem disk space usage in human-readable units",
+    prompt: "Report disk space usage across all mounted filesystems in human-readable units (G, M, K).",
     canonical: "df -h",
     accepted: ["df -h", "df -Th"],
     grammar: [
       { token: "df", desc: "Report filesystem disk space usage" },
-      { token: "-h", desc: "Human-readable sizes (G, M, K)" }
+      { token: "-h", desc: "Human-readable sizes" }
     ],
     sampleOutput: `Filesystem      Size  Used Avail Use% Mounted on
 /dev/nvme0n1p1   50G   44G  6.0G  88% /`,
-    explanation: "Add `-T` (`df -Th`) to also print the filesystem type (`ext4`, `xfs`, `overlay`, `tmpfs`)."
+    explanation: "Use `df -Th` if you also want to see the filesystem type (`ext4`, `xfs`, `overlay`, `tmpfs`)."
+  },
+  {
+    id: "proc-du-sh",
+    session: "linux-proc",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "du",
+    title: "Calculate total summary disk space used by /var/log",
+    prompt: "Display a single human-readable summary total of the disk space used by `/var/log` (without listing every subdirectory).",
+    canonical: "du -sh /var/log",
+    accepted: ["du -sh /var/log", "du -sh /var/log/"],
+    grammar: [
+      { token: "du", desc: "Estimate file space usage by walking directory trees" },
+      { token: "-s", desc: "Display only a total summary for each argument" },
+      { token: "-h", desc: "Human-readable units" }
+    ],
+    sampleOutput: `4.8G	/var/log`,
+    explanation: "Unlike `df` (which reads filesystem superblocks instantaneously), `du` traverses the directory tree and sums visible file sizes."
+  },
+  {
+    id: "proc-uptime",
+    session: "linux-proc",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "uptime",
+    title: "Check how long the host has been up and its 1/5/15-minute load averages",
+    prompt: "Print the system uptime and the 1, 5, and 15-minute load averages.",
+    canonical: "uptime",
+    accepted: ["uptime", "uptime -p"],
+    grammar: [
+      { token: "uptime", desc: "Display system uptime, logged-in users, and load averages" }
+    ],
+    sampleOutput: ` 18:20:15 up 42 days,  9:11,  2 users,  load average: 0.48, 0.62, 0.55`,
+    explanation: "Compare load averages against the number of CPU cores (`nproc` or `lscpu`)."
+  },
+  {
+    id: "proc-kill-9",
+    session: "linux-proc",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "kill",
+    title: "Forcefully terminate an unresponsive process (PID 4821) with SIGKILL",
+    prompt: "Process `4821` is stuck and ignored a graceful `SIGTERM`. Send `SIGKILL` (signal 9) to terminate PID `4821` immediately.",
+    canonical: "kill -9 4821",
+    accepted: ["kill -9 4821", "kill -KILL 4821", "kill -SIGKILL 4821"],
+    grammar: [
+      { token: "kill -9 4821", desc: "Send SIGKILL (signal 9) to PID 4821" }
+    ],
+    sampleOutput: `(PID 4821 terminated by kernel; exit code 137)`,
+    explanation: "`SIGTERM` (15) lets a process flush state and close connections cleanly; `SIGKILL` (9) terminates the process immediately inside the kernel."
+  },
+  {
+    id: "proc-ps-sort-mem",
+    session: "linux-proc",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ps",
+    title: "List all processes sorted by highest memory usage first",
+    prompt: "Run `ps aux` sorted in descending order of memory consumption (`--sort=-%mem`).",
+    canonical: "ps aux --sort=-%mem",
+    accepted: ["ps aux --sort=-%mem", "ps aux --sort=-rss"],
+    grammar: [
+      { token: "ps aux", desc: "List all processes" },
+      { token: "--sort=-%mem", desc: "Sort descending (-) by memory percentage" }
+    ],
+    sampleOutput: `USER   PID %CPU %MEM     VSZ    RSS TTY  STAT START TIME COMMAND
+root  4912 42.1 68.4 9841200 541200 ?    Sl   19:02 12:11 /usr/local/bin/prometheus`,
+    explanation: "Use `--sort=-%cpu` to sort by highest CPU usage instead."
+  },
+  {
+    id: "proc-lsof-port",
+    session: "linux-proc",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "lsof",
+    title: "Find which process has network port 8080 open using lsof",
+    prompt: "Your service failed to start with `bind: address already in use` on port `8080`. Use `lsof` to find which process holds open network port `8080`.",
+    canonical: "lsof -i :8080",
+    accepted: ["lsof -i :8080", "lsof -i:8080", "lsof -nP -i :8080"],
+    grammar: [
+      { token: "lsof", desc: "List open file descriptors" },
+      { token: "-i :8080", desc: "Filter for internet sockets on port 8080" }
+    ],
+    sampleOutput: `COMMAND  PID    USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+envoy   3109 sanjeev    9u  IPv4  41892      0t0  TCP *:8080 (LISTEN)`,
+    explanation: "In UNIX, network sockets are file descriptors (`FD 9u`)."
   },
   {
     id: "proc-df-inodes",
     session: "linux-proc",
-    difficulty: "Cisco / SRE Scenario",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "df",
-    title: "Diagnose 'No space left on device' when df -h shows plenty of free gigabytes",
+    title: "Diagnose 'No space left on device' when gigabytes of disk space are still free",
     symptomOutput: `$ touch /var/spool/job.lock
 touch: cannot touch '/var/spool/job.lock': No space left on device
 $ df -h /
 Filesystem      Size  Used Avail Use% Mounted on
 /dev/nvme0n1p1   50G   12G   38G  24% /`,
-    prompt: "Look at the symptom output above: `/` has 38GB free, yet creating a file fails with `No space left on device`! Run `df` with the flag that checks **inode** exhaustion.",
-    hint: "Pass `-i` (inodes) to `df`.",
+    prompt: "Look at the symptom output above: `/` has 38GB free, yet creating a file fails with `No space left on device`! Run `df` to check **inode** usage across mounted filesystems.",
     canonical: "df -i",
     accepted: ["df -i", "df -i /", "df -ih"],
     grammar: [
-      { token: "df", desc: "Report filesystem usage" },
-      { token: "-i", desc: "List inode usage information instead of block usage" }
+      { token: "df -i", desc: "Display inode total/used/free counts instead of block storage" }
     ],
     sampleOutput: `Filesystem      Inodes   IUsed  IFree IUse% Mounted on
 /dev/nvme0n1p1 3276800 3276800      0  100% /`,
-    explanation: "Every file requires 1 inode. Millions of tiny 1-byte cache/session files can exhaust 100% of inodes (`IUse% 100%`) while `df -h` still shows 75% free disk space!"
-  },
-  {
-    id: "proc-du-sh",
-    session: "linux-proc",
-    difficulty: "Core",
-    tool: "du",
-    title: "Summarize total disk space used by /var/log",
-    prompt: "Calculate the total summary disk usage (`-s`) of `/var/log` in human-readable format (`-h`).",
-    hint: "Use `du -sh /var/log`.",
-    canonical: "du -sh /var/log",
-    accepted: ["du -sh /var/log", "du -sh /var/log/"],
-    grammar: [
-      { token: "du", desc: "Estimate file space usage" },
-      { token: "-s", desc: "Display only a total summary" },
-      { token: "-h", desc: "Human-readable units" }
-    ],
-    sampleOutput: `4.8G	/var/log`,
-    explanation: "To see the size of each immediate subdirectory inside `/var/log`, run `du -h --max-depth=1 /var/log`."
-  },
-  {
-    id: "proc-uptime",
-    session: "linux-proc",
-    difficulty: "Core",
-    tool: "uptime",
-    title: "Check system uptime and 1/5/15-minute load averages",
-    prompt: "Display how long the system has been running and the 1, 5, and 15-minute load averages.",
-    hint: "Use `uptime`.",
-    canonical: "uptime",
-    accepted: ["uptime", "uptime -p"],
-    grammar: [
-      { token: "uptime", desc: "Display system uptime and load averages" }
-    ],
-    sampleOutput: ` 18:20:15 up 42 days,  9:11,  2 users,  load average: 0.48, 0.62, 0.55`,
-    explanation: "On Linux, load average includes both runnable CPU threads (`R`) and threads blocked in uninterruptible disk/network I/O (`D`)."
-  },
-  {
-    id: "proc-kill-9",
-    session: "linux-proc",
-    difficulty: "Core",
-    tool: "kill",
-    title: "Forcefully terminate an unresponsive process (PID 4821) with SIGKILL",
-    prompt: "Process `4821` ignored `SIGTERM`. Send `SIGKILL` (`-9`) to terminate PID `4821` immediately.",
-    hint: "Use `kill -9 4821`.",
-    canonical: "kill -9 4821",
-    accepted: ["kill -9 4821", "kill -KILL 4821", "kill -SIGKILL 4821"],
-    grammar: [
-      { token: "kill", desc: "Send a signal to a process" },
-      { token: "-9", desc: "SIGKILL (handled directly by the kernel; cannot be ignored)" },
-      { token: "4821", desc: "Target PID" }
-    ],
-    sampleOutput: `(Process 4821 killed with exit code 137 = 128 + 9)`,
-    explanation: "Exit status `137` in Docker/Kubernetes always means `128 + 9 (SIGKILL)`, whereas `143` means `128 + 15 (SIGTERM)`."
-  },
-  {
-    id: "proc-lsof-port",
-    session: "linux-proc",
-    difficulty: "Core",
-    tool: "lsof",
-    title: "Find which process has TCP/UDP port 8080 open using lsof",
-    prompt: "Use `lsof` to list any process holding open network port `8080` (`-i :8080`).",
-    hint: "Use `lsof -i :8080`.",
-    canonical: "lsof -i :8080",
-    accepted: ["lsof -i :8080", "lsof -i:8080", "lsof -nP -i :8080"],
-    grammar: [
-      { token: "lsof", desc: "List open file descriptors" },
-      { token: "-i :8080", desc: "Match network sockets on port 8080" }
-    ],
-    sampleOutput: `COMMAND  PID    USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
-envoy   3109 sanjeev    9u  IPv4  41892      0t0  TCP *:8080 (LISTEN)`,
-    explanation: "Add `-nP` (`lsof -nP -i :8080`) on busy production hosts to skip slow DNS and `/etc/services` port name lookups."
+    explanation: "Millions of tiny files can exhaust 100% of filesystem inodes (`IUse% 100%`) while plenty of block storage remains."
   },
   {
     id: "proc-lsof-deleted",
     session: "linux-proc",
-    difficulty: "Cisco / SRE Scenario",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "lsof",
-    title: "Find processes holding open deleted files (phantom disk full)",
+    title: "Locate processes holding open deleted files (phantom disk space leak)",
     symptomOutput: `$ df -h /var/log
 Filesystem      Size  Used Avail Use% Mounted on
 /dev/nvme0n1p2   40G   39G  1.0G  98% /var/log
 $ du -sh /var/log
 1.2G	/var/log`,
-    prompt: "Look at the output above: `df -h` reports 39GB used on `/var/log`, but `du -sh` only finds 1.2GB of visible files! Run `lsof` to find open files whose link count is less than 1 (`+L1`, i.e., deleted files still held open by a process).",
-    hint: "Use `lsof +L1`.",
+    prompt: "You deleted a 38GB log file under `/var/log`, yet `df -h` still shows 39GB used while `du -sh` shows only 1.2GB! Use `lsof` to list open files whose hard link count is less than 1 (unlinked/deleted files).",
     canonical: "lsof +L1",
     accepted: ["lsof +L1", "lsof | grep deleted"],
     grammar: [
-      { token: "lsof", desc: "List open files" },
-      { token: "+L1", desc: "Select open files with hard link count < 1 (unlinked from directory tree)" }
+      { token: "lsof +L1", desc: "List open files with link count < 1 (deleted from directory tree but still held open by a PID)" }
     ],
     sampleOutput: `COMMAND  PID USER   FD   TYPE DEVICE    SIZE/OFF NLINK   NODE NAME
 java    2048 root    4w   REG  259,2 39812254720     0 131074 /var/log/app.log (deleted)`,
-    explanation: "`rm` only unlinks the filename; the kernel cannot reclaim the 38GB of disk blocks until PID 2048 closes FD `4w` (or you truncate it via `: > /proc/2048/fd/4`)."
+    explanation: "The kernel cannot free an unlinked file's disk blocks until the process holding its file descriptor closes it (or restarts)."
+  },
+  {
+    id: "proc-fd-procfs",
+    session: "linux-proc",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "ls / proc",
+    title: "Inspect open file descriptors of PID 4102 directly via /proc",
+    prompt: "A minimal container has no `lsof` binary installed, and process `4102` is leaking sockets (`too many open files`). List the symlinks in `/proc` that represent all open file descriptors of PID `4102` using `ls -l`.",
+    canonical: "ls -l /proc/4102/fd",
+    accepted: ["ls -l /proc/4102/fd", "ls -lah /proc/4102/fd", "ls -la /proc/4102/fd", "ls -l /proc/4102/fd/"],
+    grammar: [
+      { token: "/proc/4102/fd", desc: "Kernel procfs directory containing one symlink per open file descriptor of PID 4102" }
+    ],
+    sampleOutput: `lrwx------ 1 root root 64 Nov  2 18:46 0 -> /dev/null
+lrwx------ 1 root root 64 Nov  2 18:46 7 -> socket:[88412]`,
+    explanation: "You can also check `/proc/4102/limits` to see the process's `Max open files` soft and hard limits, and `/proc/4102/status` to check its Linux capabilities (`CapEff`)."
   },
   {
     id: "proc-strace-pid",
     session: "linux-proc",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "strace",
     title: "Attach strace to a running process to inspect live system calls",
-    prompt: "Process `4102` appears hung. Attach `strace` to running PID `4102` (`-p 4102`) to see which kernel system call it is blocked on.",
-    hint: "Use `strace -p 4102`.",
+    prompt: "Process `4102` is hung. Attach `strace` to running PID `4102` to see which system call it is blocked on.",
     canonical: "strace -p 4102",
     accepted: ["strace -p 4102", "strace -fp 4102", "strace -f -p 4102"],
     grammar: [
-      { token: "strace", desc: "Trace system calls and signals" },
-      { token: "-p 4102", desc: "Attach to existing process ID 4102 (add -f to also trace child threads/goroutines)" }
+      { token: "strace -p 4102", desc: "Attach system-call tracer to running PID 4102 (add -f to trace child threads)" }
     ],
     sampleOutput: `strace: Process 4102 attached
 futex(0xc000058148, FUTEX_WAIT_PRIVATE, 0, NULL`,
-    explanation: "For multi-threaded programs or Go binaries (which spawn multiple OS threads `M`), pass `-f` (`strace -fp 4102`) to trace all threads, or `-c` (`strace -cp 4102`) for a syscall latency summary table."
+    explanation: "Use `strace -cp 4102` for a summary histogram of time spent in each syscall."
   },
   {
     id: "proc-sysctl-forward",
     session: "linux-proc",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "sysctl",
     title: "Enable IPv4 packet forwarding in the Linux kernel at runtime",
-    prompt: "Use `sysctl -w` to set the kernel parameter `net.ipv4.ip_forward=1` so the Linux host can route packets between interfaces/pods.",
-    hint: "Use `sysctl -w net.ipv4.ip_forward=1`.",
+    prompt: "Use `sysctl` to write `net.ipv4.ip_forward=1` at runtime so the Linux host can forward packets between interfaces.",
     canonical: "sysctl -w net.ipv4.ip_forward=1",
     accepted: ["sysctl -w net.ipv4.ip_forward=1", "sysctl net.ipv4.ip_forward=1"],
     grammar: [
-      { token: "sysctl -w", desc: "Write/modify a kernel runtime parameter under /proc/sys/" },
-      { token: "net.ipv4.ip_forward=1", desc: "Maps to /proc/sys/net/ipv4/ip_forward" }
+      { token: "sysctl -w", desc: "Modify a kernel sysctl parameter (/proc/sys/net/ipv4/ip_forward) at runtime" }
     ],
     sampleOutput: `net.ipv4.ip_forward = 1`,
-    explanation: "Kubernetes and Cilium require `net.ipv4.ip_forward=1`. Without it, the Linux kernel drops packets arriving on one interface destined for another subnet."
+    explanation: "Mandatory on Kubernetes nodes and Linux routers; without it, packets arriving on one interface destined for another subnet are dropped."
   },
 
   // ============================================================================
-  // 3. LINUX NETWORKING & PACKET CAPTURE (CISCO / eBPF / AF_PACKET)
+  // TRACK 3: LINUX NETWORKING & PACKET CAPTURE (CISCO / eBPF / AF_PACKET)
   // ============================================================================
   {
     id: "net-ip-addr",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ip",
-    title: "Inspect IPv4/IPv6 addresses and CIDR masks on all network interfaces",
-    prompt: "Use `iproute2` to display all Layer 3 IP addresses assigned to network interfaces.",
-    hint: "Use `ip addr` (or `ip a`).",
+    title: "Inspect IPv4 and IPv6 addresses assigned to all network interfaces",
+    prompt: "Use the modern `iproute2` tool to display all Layer 3 IP addresses and CIDR masks on all network interfaces.",
     canonical: "ip addr",
     accepted: ["ip addr", "ip a", "ip address", "ip addr show", "ip -br addr"],
     grammar: [
-      { token: "ip", desc: "iproute2 utility (talks to kernel via Netlink)" },
-      { token: "addr", desc: "Inspect Layer 3 IPv4/IPv6 addresses and CIDR prefixes" }
+      { token: "ip addr", desc: "Display Layer 3 IPv4/IPv6 addresses on all interfaces" }
     ],
     sampleOutput: `2: eth0@if14: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP
     inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0`,
-    explanation: "Tip: `ip -br -c addr` gives a super clean, colorized 1-line-per-interface table."
+    explanation: "In `eth0@if14`, `@if14` identifies the peer veth interface index in another network namespace."
   },
   {
     id: "net-ip-link",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ip",
-    title: "Inspect Layer 2 interface state, MAC addresses, MTU, and PROMISC flags",
-    prompt: "Display all Layer 2 network interfaces, their operational state, MTU, and MAC addresses.",
-    hint: "Use `ip link`.",
+    title: "Inspect Layer 2 interface state, MAC addresses, and MTU",
+    prompt: "Display all Layer 2 network interfaces, their operational link state, MAC addresses, and MTU.",
     canonical: "ip link",
     accepted: ["ip link", "ip l", "ip link show", "ip -br link"],
     grammar: [
-      { token: "ip link", desc: "Inspect Layer 2 device attributes (MAC, MTU, UP/LOWER_UP, PROMISC)" }
+      { token: "ip link", desc: "Inspect Layer 2 data-link parameters (MAC, MTU, UP/LOWER_UP, PROMISC)" }
     ],
     sampleOutput: `2: eth0: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP> mtu 1500 state UP
     link/ether 52:54:00:6b:3c:11 brd ff:ff:ff:ff:ff:ff`,
-    explanation: "`LOWER_UP` means physical Layer 1 carrier link is detected; `UP` means the interface is administratively enabled at Layer 2."
-  },
-  {
-    id: "net-ip-s-link",
-    session: "linux-net",
-    difficulty: "Intermediate",
-    tool: "ip",
-    title: "Check RX/TX packet error, drop, and overrun counters on network interfaces",
-    prompt: "Use `ip` with the statistics flag (`-s`) on `link` to inspect per-interface RX and TX packet counters, errors, and drops.",
-    hint: "Use `ip -s link` (or `ip -s link show eth0`).",
-    canonical: "ip -s link",
-    accepted: ["ip -s link", "ip -s l", "ip -s link show", "ip -s link show eth0"],
-    grammar: [
-      { token: "ip -s link", desc: "Print Layer 2 interface RX/TX packet, byte, error, and drop statistics" }
-    ],
-    sampleOutput: `2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP
-    RX:  bytes  packets errors dropped  missed   mcast
-    849102410   912401      0    1420       0       0`,
-    explanation: "Non-zero `dropped` in `ip -s link` means the kernel softnet backlog or socket buffer dropped incoming frames after the NIC DMA'd them."
-  },
-  {
-    id: "net-ip-promisc",
-    session: "linux-net",
-    difficulty: "Intermediate",
-    tool: "ip",
-    title: "Enable promiscuous mode on eth0 for Layer 2 AF_PACKET sniffing",
-    prompt: "Your Go `AF_PACKET` packet sniffer needs to capture all frames on the wire, even those not addressed to `eth0`'s MAC. Enable `promisc on` for device `eth0` using `ip link set`.",
-    hint: "Use `ip link set eth0 promisc on`.",
-    canonical: "ip link set eth0 promisc on",
-    accepted: ["ip link set eth0 promisc on", "ip link set dev eth0 promisc on"],
-    grammar: [
-      { token: "ip link set eth0", desc: "Modify device attributes on eth0" },
-      { token: "promisc on", desc: "Enable promiscuous mode so NIC passes all L2 frames to the kernel" }
-    ],
-    sampleOutput: `(eth0 flags in 'ip link' now include PROMISC)`,
-    explanation: "In promiscuous mode (or via `PACKET_ADD_MEMBERSHIP` / `PACKET_MR_PROMISC` `setsockopt` in Go), the NIC disables hardware MAC filtering and passes all frames up to `AF_PACKET` taps."
+    explanation: "`LOWER_UP` confirms physical Layer 1 carrier detection; `UP` confirms the interface is administratively enabled."
   },
   {
     id: "net-ip-route",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ip",
     title: "Inspect the kernel Layer 3 IP routing table",
-    prompt: "Display the main kernel IPv4 routing table.",
-    hint: "Use `ip route` (or `ip r`).",
+    prompt: "Display the main kernel IPv4 routing table to see the default gateway and subnet routes.",
     canonical: "ip route",
     accepted: ["ip route", "ip r", "ip route show"],
     grammar: [
-      { token: "ip route", desc: "Display kernel L3 routing table entries" }
+      { token: "ip route", desc: "Show kernel Layer 3 routing table entries" }
     ],
     sampleOutput: `default via 10.0.2.2 dev eth0 proto dhcp src 10.0.2.15 metric 100
 10.244.0.0/24 via 10.244.0.0 dev cilium_host src 10.244.0.214 mtu 1500`,
-    explanation: "Shows default gateway, local link subnets, and CNI pod CIDR routes."
-  },
-  {
-    id: "net-ip-route-get",
-    session: "linux-net",
-    difficulty: "Intermediate",
-    tool: "ip",
-    title: "Query the kernel FIB for the exact route and source IP chosen for a destination",
-    prompt: "A host has 5 network interfaces and multiple routing tables. Ask the kernel routing engine which outgoing interface (`dev`), gateway (`via`), and source IP (`src`) it will use to reach `10.244.2.45`.",
-    hint: "Use `ip route get 10.244.2.45`.",
-    canonical: "ip route get 10.244.2.45",
-    accepted: ["ip route get 10.244.2.45", "ip r get 10.244.2.45"],
-    grammar: [
-      { token: "ip route get", desc: "Perform an actual kernel FIB route lookup for a single destination IP" },
-      { token: "10.244.2.45", desc: "Destination IP to resolve" }
-    ],
-    sampleOutput: `10.244.2.45 via 10.244.0.0 dev cilium_host src 10.244.0.214 uid 0`,
-    explanation: "When Cilium or policy-based routing (`ip rule`) uses multiple routing tables, `ip route` only shows the `main` table—whereas `ip route get <ip>` evaluates all rules and prints the exact path the kernel will take!"
+    explanation: "Shows how traffic is routed to local subnets, pod CIDRs, and the default gateway."
   },
   {
     id: "net-ip-neigh",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ip",
-    title: "Inspect the Layer 2 ARP / neighbor table",
-    symptomOutput: `$ ping -c 1 10.0.2.99
-From 10.0.2.15 icmp_seq=1 Destination Host Unreachable`,
-    prompt: "Pinging `10.0.2.99` on the same `/24` subnet returns `Destination Host Unreachable`. Inspect the kernel ARP / neighbor table to check if ARP resolution for `10.0.2.99` is `INCOMPLETE` or `FAILED`.",
-    hint: "Use `ip neigh`.",
+    title: "Inspect the Layer 2 ARP / neighbor cache",
+    prompt: "Display the kernel neighbor table mapping local subnet IP addresses to MAC addresses and reachability states (`REACHABLE`, `STALE`, `FAILED`).",
     canonical: "ip neigh",
     accepted: ["ip neigh", "ip n", "ip neighbor", "ip neigh show"],
     grammar: [
-      { token: "ip neigh", desc: "Show L3-to-L2 ARP/NDISC neighbor cache states (REACHABLE, STALE, INCOMPLETE, FAILED)" }
+      { token: "ip neigh", desc: "Show ARP (IPv4) and NDISC (IPv6) neighbor cache entries" }
     ],
     sampleOutput: `10.0.2.2 dev eth0 lladdr 52:55:0a:00:02:02 REACHABLE
 10.0.2.99 dev eth0 FAILED`,
-    explanation: "When `ping` says `From <your-own-IP>: Destination Host Unreachable`, it means ARP broadcast (`Who has 10.0.2.99?`) received zero ARP replies on the local L2 segment (`ip neigh` shows `FAILED`)."
+    explanation: "An `INCOMPLETE` or `FAILED` entry means ARP broadcast requests (`Who has ...?`) are not receiving ARP replies at Layer 2."
   },
   {
     id: "net-ss-tulpn",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ss",
-    title: "List all listening TCP and UDP sockets with numeric ports and process info",
-    prompt: "Inspect all listening (`-l`) TCP (`-t`) and UDP (`-u`) sockets with numeric ports (`-n`) and owning process/PID (`-p`).",
-    hint: "Use `ss -tulpn`.",
+    title: "List all listening TCP and UDP sockets with numeric ports and owning processes",
+    prompt: "Inspect all listening TCP and UDP sockets on the host, showing numeric IP/port values and the process/PID bound to each socket.",
     canonical: "ss -tulpn",
     accepted: ["ss -tulpn"],
     grammar: [
-      { token: "ss", desc: "Socket statistics (queries kernel netlink sock_diag)" },
+      { token: "ss", desc: "Socket statistics utility (queries kernel netlink sock_diag)" },
       { token: "-t / -u", desc: "TCP and UDP sockets" },
       { token: "-l", desc: "Listening sockets only" },
-      { token: "-p", desc: "Show owning process and PID" },
-      { token: "-n", desc: "Numeric addresses and port numbers" }
+      { token: "-p", desc: "Show process name and PID" },
+      { token: "-n", desc: "Numeric addresses and port numbers (skip DNS/service resolution)" }
     ],
     sampleOutput: `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
 tcp   LISTEN 0      4096   0.0.0.0:8080        0.0.0.0:*         users:(("api",pid=4102,fd=7))`,
-    explanation: "Always check whether `Local Address:Port` is bound to `127.0.0.1` (loopback only) vs `0.0.0.0` / `*` (all interfaces)."
-  },
-  {
-    id: "net-ss-tan",
-    session: "linux-net",
-    difficulty: "Intermediate",
-    tool: "ss",
-    title: "Inspect all TCP connection states (ESTABLISHED, TIME-WAIT, SYN-SENT)",
-    prompt: "A service is exhausting ephemeral ports. List **all** (`-a`) TCP (`-t`) sockets with numeric ports (`-n`) so you can see `ESTAB`, `TIME-WAIT`, `CLOSE-WAIT`, and `SYN-SENT` connections.",
-    hint: "Combine `-t`, `-a`, and `-n` with `ss`: `ss -tan`.",
-    canonical: "ss -tan",
-    accepted: ["ss -tan", "ss -tanp"],
-    grammar: [
-      { token: "ss -t", desc: "TCP sockets" },
-      { token: "-a", desc: "All socket states (listening + established + time-wait + close-wait)" },
-      { token: "-n", desc: "Numeric IPs and ports" }
-    ],
-    sampleOutput: `State      Recv-Q Send-Q Local Address:Port   Peer Address:Port
-ESTAB      0      0      10.244.1.15:8080     10.244.2.19:54120
-CLOSE-WAIT 1      0      10.244.1.15:8080     10.244.2.20:39104
-SYN-SENT   0      1      10.244.1.15:41892    10.96.4.12:5432`,
-    explanation: "Lots of `CLOSE-WAIT` means the remote peer closed the connection (`FIN`), but your local application code forgot to call `conn.Close()`! Lots of `SYN-SENT` means outbound TCP handshakes are being dropped by a firewall or routing blackhole."
-  },
-  {
-    id: "net-nsenter-netns",
-    session: "linux-net",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "nsenter",
-    title: "Run ss -tulpn inside a distroless container's network namespace from the host",
-    prompt: "A distroless container has no shell or `ss` binary inside it, and its host PID (from `docker inspect` / `crictl inspect`) is `14820`. Use `nsenter` targeting PID `14820` (`-t 14820`) and its network namespace (`-n`) to run `ss -tulpn` using the host's binary!",
-    hint: "Use `nsenter -t 14820 -n ss -tulpn`.",
-    canonical: "nsenter -t 14820 -n ss -tulpn",
-    accepted: ["nsenter -t 14820 -n ss -tulpn", "nsenter -n -t 14820 ss -tulpn"],
-    grammar: [
-      { token: "nsenter", desc: "Run program with namespaces of another process" },
-      { token: "-t 14820", desc: "Target process PID on the host" },
-      { token: "-n", desc: "Enter the target process's network namespace (/proc/14820/ns/net)" },
-      { token: "ss -tulpn", desc: "Execute the host's ss binary inside the container's netns" }
-    ],
-    sampleOutput: `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
-tcp   LISTEN 0      4096   *:8080              *:*               users:(("app",pid=14820,fd=3))`,
-    explanation: "`nsenter -t <PID> -n <cmd>` is a superpower for debugging minimal/distroless Kubernetes pods: you enter the pod's network namespace while keeping access to all root tools (`tcpdump`, `ss`, `ip`, `ethtool`) installed on the worker node!"
+    explanation: "Check `Local Address:Port` (`127.0.0.1` vs `0.0.0.0`) and `Recv-Q` (current queued unaccepted connections) vs `Send-Q` (max listen backlog)."
   },
   {
     id: "net-ping-count",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "ping",
-    title: "Send 4 ICMP Echo Requests to test Layer 3 reachability",
-    prompt: "Send exactly 4 (`-c 4`) ICMP Echo Request packets to `1.1.1.1`.",
-    hint: "Use `ping -c 4 1.1.1.1`.",
+    title: "Send exactly 4 ICMP Echo Requests to 1.1.1.1",
+    prompt: "Send `4` ICMP Echo Request packets to `1.1.1.1` and stop automatically.",
     canonical: "ping -c 4 1.1.1.1",
-    accepted: ["ping -c 4 1.1.1.1", "ping 1.1.1.1 -c 4"],
+    accepted: ["ping -c 4 1.1.1.1", "ping 1.1.1.1 -c 4", "ping -c4 1.1.1.1"],
     grammar: [
-      { token: "ping -c 4", desc: "Stop after sending 4 ICMP Echo Request packets" },
-      { token: "1.1.1.1", desc: "Destination IP" }
+      { token: "ping -c 4 1.1.1.1", desc: "Send 4 ICMP Echo probes to 1.1.1.1 and exit" }
     ],
     sampleOutput: `4 packets transmitted, 4 received, 0% packet loss, time 3005ms`,
-    explanation: "Linux `ping` runs indefinitely unless `-c <count>` is specified."
-  },
-  {
-    id: "net-ping-mtu",
-    session: "linux-net",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "ping",
-    title: "Diagnose a Path MTU Blackhole with Don't Fragment (DF) probes",
-    symptomOutput: `$ curl -v https://10.244.2.10:8443
-* Connected to 10.244.2.10 (10.244.2.10) port 8443
-* TLSv1.3 (OUT), TLS handshake, Client hello (1):
-(hangs forever...)`,
-    prompt: "TCP 3-way handshake succeeds, but TLS `ClientHello` hangs! Suspect a VXLAN/Geneve overlay MTU mismatch. Run `ping` to `10.244.2.10` with `-c 4`, Don't Fragment bit set (`-M do`), and payload size `1472` (`-s 1472`).",
-    hint: "Use `ping -c 4 -M do -s 1472 10.244.2.10`.",
-    canonical: "ping -c 4 -M do -s 1472 10.244.2.10",
-    accepted: [
-      "ping -c 4 -M do -s 1472 10.244.2.10",
-      "ping -M do -s 1472 -c 4 10.244.2.10",
-      "ping -M do -s 1472 10.244.2.10"
-    ],
-    grammar: [
-      { token: "-M do", desc: "Set IPv4 Don't Fragment (DF) flag" },
-      { token: "-s 1472", desc: "1472 payload + 8B ICMP + 20B IPv4 = 1500B total frame" }
-    ],
-    sampleOutput: `ping: local error: message too long, mtu=1450`,
-    explanation: "When small packets (`ping`, TCP SYN) work but TLS handshakes or bulk transfers hang, it is almost always an MTU blackhole (e.g. 50-byte VXLAN header reducing inner MTU to 1450)."
+    explanation: "Unlike Windows, Linux `ping` runs until interrupted unless `-c <count>` is passed."
   },
   {
     id: "net-curl-v",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "curl",
-    title: "Inspect full HTTP request/response headers and TLS handshake with curl",
-    prompt: "Make a verbose (`-v`) HTTP request to `https://sanjeevsethi.in`.",
-    hint: "Use `curl -v https://sanjeevsethi.in`.",
+    title: "Inspect full HTTP headers and TLS handshake details with curl",
+    prompt: "Make a verbose HTTP request to `https://sanjeevsethi.in` that prints the TCP connection, TLS handshake, outbound request headers, and inbound response headers.",
     canonical: "curl -v https://sanjeevsethi.in",
     accepted: ["curl -v https://sanjeevsethi.in", "curl -v https://sanjeevsethi.in/"],
     grammar: [
-      { token: "curl -v", desc: "Print TCP connect, TLS handshake (*), request headers (>), and response headers (<)" }
+      { token: "curl -v", desc: "Verbose mode showing connection lifecycle (*), request (>), and response (<)" }
     ],
     sampleOutput: `* Connected to sanjeevsethi.in (185.199.108.153) port 443
 > GET / HTTP/2
 < HTTP/2 200`,
-    explanation: "Use `curl -I <url>` when you only want response headers (`HEAD` request), or `curl -v --resolve host:443:10.0.0.5 https://host` to test a specific backend IP with SNI."
+    explanation: "Use `curl -I <url>` when you only want response headers (`HEAD` request)."
   },
   {
     id: "net-dig-dns",
     session: "linux-net",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "dig",
-    title: "Query DNS records for a Kubernetes service FQDN using dig",
-    prompt: "Use `dig` to resolve `kubernetes.default.svc.cluster.local`.",
-    hint: "Use `dig kubernetes.default.svc.cluster.local`.",
+    title: "Query DNS A records for kubernetes.default.svc.cluster.local",
+    prompt: "Use `dig` to query the DNS record for `kubernetes.default.svc.cluster.local`.",
     canonical: "dig kubernetes.default.svc.cluster.local",
     accepted: [
       "dig kubernetes.default.svc.cluster.local",
       "dig +short kubernetes.default.svc.cluster.local"
     ],
     grammar: [
-      { token: "dig", desc: "DNS lookup tool" },
-      { token: "+short", desc: "(Optional) Print only the resolved answer" }
+      { token: "dig <fqdn>", desc: "Perform DNS lookup and print QUESTION, ANSWER, and SERVER sections" }
     ],
-    sampleOutput: `;; ANSWER SECTION:
-kubernetes.default.svc.cluster.local. 5 IN A 10.96.0.1`,
-    explanation: "To query CoreDNS (`10.96.0.10`) directly bypassing `/etc/resolv.conf`, run `dig @10.96.0.10 kubernetes.default.svc.cluster.local`."
+    sampleOutput: `kubernetes.default.svc.cluster.local. 5 IN A 10.96.0.1`,
+    explanation: "Pass `@<dns-server-ip>` (e.g. `dig @10.96.0.10 ...`) to test a specific DNS server directly."
+  },
+  {
+    id: "net-nc-portcheck",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "nc",
+    title: "Test TCP port 443 reachability on 10.96.0.1 using netcat",
+    prompt: "Use `nc` (netcat) in zero-I/O port-scanning mode with verbose output to verify if TCP port `443` is open on `10.96.0.1`.",
+    canonical: "nc -zv 10.96.0.1 443",
+    accepted: ["nc -zv 10.96.0.1 443", "nc -vz 10.96.0.1 443"],
+    grammar: [
+      { token: "-z", desc: "Zero-I/O mode (complete 3-way TCP handshake and close immediately)" },
+      { token: "-v", desc: "Verbose connection status output" }
+    ],
+    sampleOutput: `Connection to 10.96.0.1 443 port [tcp/https] succeeded!`,
+    explanation: "Cleanest way to verify L4 TCP reachability when `curl` isn't applicable (e.g. databases, gRPC, or custom protocols)."
   },
   {
     id: "net-traceroute",
     session: "linux-net",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "traceroute",
-    title: "Trace Layer 3 router hops without reverse DNS lookup delays",
-    prompt: "Run `traceroute` to `8.8.8.8` with numeric IP output (`-n`).",
-    hint: "Use `traceroute -n 8.8.8.8`.",
+    title: "Trace Layer 3 router hops to 8.8.8.8 without reverse DNS lookups",
+    prompt: "Trace the network path hop-by-hop to `8.8.8.8` with numeric IP output only (skipping reverse DNS hostname resolution).",
     canonical: "traceroute -n 8.8.8.8",
     accepted: ["traceroute -n 8.8.8.8", "traceroute 8.8.8.8"],
     grammar: [
-      { token: "traceroute -n", desc: "Trace L3 hop path by incrementing IP TTL without reverse DNS lookups" }
+      { token: "traceroute -n", desc: "Send incrementing TTL probes without reverse DNS lookups" }
     ],
     sampleOutput: ` 1  10.0.2.2  0.412 ms
  2  172.16.0.1  2.104 ms`,
-    explanation: "If intermediate firewalls block UDP traceroute probes, use `traceroute -T -p 443 <host>` to send TCP SYN probes on port 443."
+    explanation: "Skipping reverse DNS (`-n`) prevents 5-second timeouts on hops without PTR records."
+  },
+  {
+    id: "net-ip-s-link",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ip",
+    title: "Inspect RX/TX packet drop and error counters on network interfaces",
+    prompt: "Display Layer 2 interface details along with per-interface RX/TX packet, byte, error, and drop statistics using `ip`.",
+    canonical: "ip -s link",
+    accepted: ["ip -s link", "ip -s l", "ip -s link show", "ip -s link show eth0"],
+    grammar: [
+      { token: "ip -s link", desc: "Include RX and TX packet/error/drop counters for each interface" }
+    ],
+    sampleOutput: `RX:  bytes  packets errors dropped  missed   mcast
+849102410   912401      0    1420       0       0`,
+    explanation: "Rising RX `dropped` counters indicate kernel softnet backlog saturation or socket receive buffer exhaustion."
+  },
+  {
+    id: "net-ip-route-get",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ip",
+    title: "Ask the kernel routing engine which exact route and source IP it will use for 10.244.2.45",
+    prompt: "On a multi-interface host with policy routing (`ip rule`), query the kernel FIB for the exact outgoing interface, gateway, and source IP chosen to reach `10.244.2.45`.",
+    canonical: "ip route get 10.244.2.45",
+    accepted: ["ip route get 10.244.2.45", "ip r get 10.244.2.45"],
+    grammar: [
+      { token: "ip route get <ip>", desc: "Execute a live kernel FIB lookup across all routing rules and tables" }
+    ],
+    sampleOutput: `10.244.2.45 via 10.244.0.0 dev cilium_host src 10.244.0.214 uid 0`,
+    explanation: "Essential when Cilium or VPNs use multiple routing tables that don't show up in a plain `ip route`."
+  },
+  {
+    id: "net-ip-promisc",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ip",
+    title: "Enable promiscuous mode on eth0 for Layer 2 packet sniffing",
+    prompt: "Configure network device `eth0` with `promisc on` using `ip link set` so your `AF_PACKET` sniffer receives all frames on the wire.",
+    canonical: "ip link set eth0 promisc on",
+    accepted: ["ip link set eth0 promisc on", "ip link set dev eth0 promisc on"],
+    grammar: [
+      { token: "ip link set eth0 promisc on", desc: "Disable NIC hardware MAC filtering and pass all L2 frames to the kernel" }
+    ],
+    sampleOutput: `(eth0 flags now include PROMISC)`,
+    explanation: "Allows raw L2 socket consumers (`tcpdump`, `AF_PACKET`) to inspect frames not addressed to the host's own MAC."
+  },
+  {
+    id: "net-ss-tan",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ss",
+    title: "List all TCP connections in every state (ESTAB, TIME-WAIT, CLOSE-WAIT, SYN-SENT)",
+    prompt: "Inspect **all** TCP sockets (both listening and non-listening/established) with numeric IP addresses and port numbers.",
+    canonical: "ss -tan",
+    accepted: ["ss -tan", "ss -tanp"],
+    grammar: [
+      { token: "-t", desc: "TCP sockets" },
+      { token: "-a", desc: "All states (ESTAB, LISTEN, TIME-WAIT, CLOSE-WAIT, SYN-SENT)" },
+      { token: "-n", desc: "Numeric output" }
+    ],
+    sampleOutput: `State      Recv-Q Send-Q Local Address:Port   Peer Address:Port
+CLOSE-WAIT 1      0      10.244.1.15:8080     10.244.2.20:39104
+SYN-SENT   0      1      10.244.1.15:41892    10.96.4.12:5432`,
+    explanation: "Accumulating `CLOSE-WAIT` sockets means your application isn't calling `Close()` after the peer disconnects; `SYN-SENT` means outbound handshakes are timing out."
   },
   {
     id: "net-tcpdump-port",
     session: "linux-net",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "tcpdump",
-    title: "Capture packets on eth0 for port 80 with numeric IPs and ports",
-    prompt: "Run `tcpdump` on interface `eth0` (`-i eth0`) with numeric host/port output (`-nn`) filtering for `port 80`.",
-    hint: "Use `tcpdump -i eth0 -nn port 80`.",
+    title: "Capture packets on eth0 for port 80 without DNS or service-name resolution",
+    prompt: "Run `tcpdump` on interface `eth0` with numeric host and port output, filtering for `port 80`.",
     canonical: "tcpdump -i eth0 -nn port 80",
     accepted: [
       "tcpdump -i eth0 -nn port 80",
@@ -888,145 +969,190 @@ kubernetes.default.svc.cluster.local. 5 IN A 10.96.0.1`,
       "tcpdump -i eth0 -n port 80"
     ],
     grammar: [
-      { token: "-i eth0", desc: "Capture on interface eth0 (use -i any for all interfaces)" },
-      { token: "-nn", desc: "Disable both DNS name resolution and port service-name lookup" },
-      { token: "port 80", desc: "BPF filter matching TCP/UDP port 80" }
+      { token: "-i eth0", desc: "Capture on interface eth0" },
+      { token: "-nn", desc: "Do not resolve IP addresses or port numbers to names" },
+      { token: "port 80", desc: "BPF filter matching source or destination port 80" }
     ],
     sampleOutput: `18:25:01.402 IP 10.244.1.15.51244 > 10.244.2.80.80: Flags [S], seq 29481041
 18:25:01.402 IP 10.244.2.80.80 > 10.244.1.15.51244: Flags [R.], ack 29481042`,
-    explanation: "`Flags [S]` (SYN) followed immediately by `Flags [R.]` (RST-ACK) proves the packet reached the destination host, but nothing was listening on port 80."
-  },
-  {
-    id: "net-tcpdump-vlan",
-    session: "linux-net",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "tcpdump",
-    title: "Capture packets on eth0 showing Layer 2 Ethernet MACs and 802.1Q VLAN tags",
-    prompt: "Run `tcpdump` on `eth0` (`-i eth0`) with numeric output (`-nn`) and link-level Layer 2 Ethernet headers (`-e`) to verify 802.1Q VLAN tags from a Cisco switch trunk.",
-    hint: "Add `-e` to `tcpdump -i eth0 -nn`.",
-    canonical: "tcpdump -i eth0 -nn -e",
-    accepted: ["tcpdump -i eth0 -nn -e", "tcpdump -i eth0 -nne", "tcpdump -nne -i eth0"],
-    grammar: [
-      { token: "-e", desc: "Print link-level L2 header (src/dst MAC, EtherType 0x8100, VLAN ID)" },
-      { token: "-nn", desc: "Numeric IPs and ports" }
-    ],
-    sampleOutput: `18:42:10.114 00:1b:54:c2:10:01 > 52:54:00:6b:3c:11, ethertype 802.1Q (0x8100), vlan 120, ethertype IPv4`,
-    explanation: "Without `-e`, `tcpdump` hides the L2 header and 802.1Q VLAN tag."
+    explanation: "Always pass `-nn` in production so `tcpdump` doesn't generate reverse-DNS traffic for every packet it captures!"
   },
   {
     id: "net-tcpdump-write-pcap",
     session: "linux-net",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "tcpdump",
-    title: "Write raw captured packets to a .pcap file for Wireshark or Go AF_PACKET replay",
-    prompt: "Capture packets on interface `eth0` (`-i eth0`) and write the raw binary packets directly to `capture.pcap` (`-w capture.pcap`).",
-    hint: "Use `tcpdump -i eth0 -w capture.pcap`.",
+    title: "Save raw captured packets on eth0 to capture.pcap",
+    prompt: "Capture packets on interface `eth0` and write the raw binary packet data directly to a file named `capture.pcap`.",
     canonical: "tcpdump -i eth0 -w capture.pcap",
     accepted: ["tcpdump -i eth0 -w capture.pcap", "tcpdump -nn -i eth0 -w capture.pcap"],
     grammar: [
       { token: "-i eth0", desc: "Capture interface" },
-      { token: "-w capture.pcap", desc: "Write raw packet bytes to pcap file instead of parsing to stdout" }
+      { token: "-w capture.pcap", desc: "Write raw packet frames to a pcap file" }
     ],
-    sampleOutput: `tcpdump: listening on eth0, link-type EN10MB (Ethernet), snapshot length 262144 bytes`,
-    explanation: "To read and analyze that `.pcap` file later from the CLI, run `tcpdump -nn -r capture.pcap`."
-  },
-  {
-    id: "net-nc-portcheck",
-    session: "linux-net",
-    difficulty: "Core",
-    tool: "nc",
-    title: "Test whether TCP port 443 is open on a remote host using netcat",
-    prompt: "Use `nc` in zero-I/O mode (`-z`) with verbose output (`-v`) to test TCP connectivity to `10.96.0.1` port `443`.",
-    hint: "Use `nc -zv 10.96.0.1 443`.",
-    canonical: "nc -zv 10.96.0.1 443",
-    accepted: ["nc -zv 10.96.0.1 443", "nc -vz 10.96.0.1 443"],
-    grammar: [
-      { token: "nc -zv", desc: "Zero-I/O (-z) verbose (-v) TCP handshake test" },
-      { token: "10.96.0.1 443", desc: "Target IP and port" }
-    ],
-    sampleOutput: `Connection to 10.96.0.1 443 port [tcp/https] succeeded!`,
-    explanation: "Fastest way to verify L4 TCP port reachability without sending application payload."
+    sampleOutput: `tcpdump: listening on eth0, link-type EN10MB (Ethernet)`,
+    explanation: "Read the saved file later using `tcpdump -nn -r capture.pcap` or open it in Wireshark."
   },
   {
     id: "net-ethtool",
     session: "linux-net",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "ethtool",
-    title: "Inspect physical NIC link speed, duplex, and carrier state",
-    prompt: "Run `ethtool` on `eth0` to check link speed, duplex, and physical link detection.",
-    hint: "Use `ethtool eth0`.",
+    title: "Query physical NIC link speed, duplex, and carrier detection on eth0",
+    prompt: "Inspect the physical link speed, duplex mode, and link detection status of network interface `eth0`.",
     canonical: "ethtool eth0",
-    accepted: ["ethtool eth0", "ethtool -S eth0"],
+    accepted: ["ethtool eth0"],
     grammar: [
-      { token: "ethtool eth0", desc: "Query physical NIC settings (use ethtool -S eth0 for NIC hardware ring-buffer drop counters)" }
+      { token: "ethtool eth0", desc: "Query physical NIC driver and link settings" }
     ],
     sampleOutput: `Speed: 25000Mb/s
 Duplex: Full
 Link detected: yes`,
-    explanation: "Use `ethtool -S eth0` to check NIC ring-buffer drops (`rx_missed_errors`) and `ethtool -k eth0` to inspect TSO/GSO/GRO hardware offloads."
+    explanation: "Verifies physical Layer 1 link state and negotiated speed."
+  },
+  {
+    id: "net-ethtool-stats",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "ethtool",
+    title: "Inspect NIC hardware ring-buffer drop counters on eth0",
+    prompt: "Packets are being dropped at high throughput before reaching the kernel network stack. Query the NIC driver's hardware statistics on `eth0` using `ethtool`.",
+    canonical: "ethtool -S eth0",
+    accepted: ["ethtool -S eth0"],
+    grammar: [
+      { token: "ethtool -S eth0", desc: "Dump NIC hardware/driver counters (rx_missed_errors, rx_no_buffer_count)" }
+    ],
+    sampleOutput: `NIC statistics:
+     rx_packets: 94812041
+     rx_missed_errors: 1842`,
+    explanation: "`rx_missed_errors` in `ethtool -S` proves the NIC hardware RX ring buffer overflowed before the kernel could DMA packets out (fixable by increasing ring size with `ethtool -G eth0 rx 4096`)."
+  },
+  {
+    id: "net-tcpdump-vlan",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "tcpdump",
+    title: "Capture packets on eth0 with Layer 2 Ethernet MAC headers and 802.1Q VLAN tags",
+    prompt: "Run `tcpdump` on `eth0` with numeric output and link-level Layer 2 headers enabled so you can see source/destination MAC addresses, EtherType (`0x8100`), and 802.1Q VLAN IDs.",
+    canonical: "tcpdump -i eth0 -nn -e",
+    accepted: ["tcpdump -i eth0 -nn -e", "tcpdump -i eth0 -nne", "tcpdump -nne -i eth0"],
+    grammar: [
+      { token: "-e", desc: "Print the link-level Layer 2 Ethernet header on each dump line" },
+      { token: "-nn", desc: "Numeric IP and port output" }
+    ],
+    sampleOutput: `18:42:10.114 00:1b:54:c2:10:01 > 52:54:00:6b:3c:11, ethertype 802.1Q (0x8100), vlan 120, ethertype IPv4`,
+    explanation: "Essential when verifying Cisco switch trunk ports, VLAN tags, or wrong destination MACs."
+  },
+  {
+    id: "net-ping-mtu",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "ping",
+    title: "Diagnose a Path MTU Blackhole using a 1500-byte Don't Fragment probe",
+    symptomOutput: `$ curl -v https://10.244.2.10:8443
+* Connected to 10.244.2.10 (10.244.2.10) port 8443
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+(stalls indefinitely...)`,
+    prompt: "Small TCP handshakes succeed, but large TLS handshakes stall! Test whether a full 1500-byte packet can reach `10.244.2.10` without fragmentation by sending `4` ICMP probes with the Don't Fragment (`do`) mode and payload size `1472`.",
+    canonical: "ping -c 4 -M do -s 1472 10.244.2.10",
+    accepted: [
+      "ping -c 4 -M do -s 1472 10.244.2.10",
+      "ping -M do -s 1472 -c 4 10.244.2.10",
+      "ping -M do -s 1472 10.244.2.10"
+    ],
+    grammar: [
+      { token: "-M do", desc: "Set the IPv4 Don't Fragment (DF) flag" },
+      { token: "-s 1472", desc: "1472B payload + 8B ICMP header + 20B IPv4 header = 1500B total packet" }
+    ],
+    sampleOutput: `ping: local error: message too long, mtu=1450`,
+    explanation: "VXLAN/Geneve overlays add 50 bytes of outer headers, reducing inner MTU from 1500 to 1450."
+  },
+  {
+    id: "net-nsenter-netns",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "nsenter",
+    title: "Execute ss -tulpn inside a distroless container's network namespace from the host",
+    prompt: "A distroless container has no shell or networking tools inside it, and its host PID is `14820`. Use `nsenter` to enter PID `14820`'s network namespace and run `ss -tulpn` using the host's binary.",
+    canonical: "nsenter -t 14820 -n ss -tulpn",
+    accepted: ["nsenter -t 14820 -n ss -tulpn", "nsenter -n -t 14820 ss -tulpn"],
+    grammar: [
+      { token: "nsenter -t 14820", desc: "Target host PID 14820" },
+      { token: "-n", desc: "Enter only the network namespace (/proc/14820/ns/net)" },
+      { token: "ss -tulpn", desc: "Run the host's ss binary inside the container's network stack" }
+    ],
+    sampleOutput: `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+tcp   LISTEN 0      4096   *:8080              *:*               users:(("app",pid=14820,fd=3))`,
+    explanation: "You can run `tcpdump`, `ss`, or `ip` inside any pod's network namespace from the worker node using `nsenter -t <pid> -n`."
   },
 
   // ============================================================================
-  // 4. DOCKER & CONTAINERD (crictl)
+  // TRACK 4: DOCKER & CONTAINERD (crictl)
   // ============================================================================
   {
     id: "cnt-docker-ps-a",
     session: "containers",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "docker",
-    title: "List all Docker containers including stopped/crashed ones",
-    prompt: "List all containers on the host—both running and exited (`-a`).",
-    hint: "Use `docker ps -a`.",
+    title: "List all Docker containers including stopped and crashed ones",
+    prompt: "List all Docker containers on the host, including those that have exited or crashed.",
     canonical: "docker ps -a",
     accepted: ["docker ps -a", "docker ps --all", "docker container ls -a"],
     grammar: [
-      { token: "docker ps -a", desc: "List all containers including Exited/Created states" }
+      { token: "docker ps -a", desc: "List all containers regardless of state (Running, Exited, Created)" }
     ],
     sampleOutput: `CONTAINER ID   IMAGE          STATUS                     NAMES
 c19a04e2b77d   frametap:dev   Exited (1) 2 minutes ago   sniffer-test`,
-    explanation: "Stopped or crashed containers only appear when `-a` is passed."
+    explanation: "Crashed containers are hidden by default unless `-a` is passed."
   },
   {
     id: "cnt-docker-images",
     session: "containers",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "docker",
     title: "List locally cached Docker images and their sizes",
-    prompt: "List all locally stored Docker images.",
-    hint: "Use `docker images`.",
+    prompt: "List all locally stored container images, their tags, IDs, and disk sizes.",
     canonical: "docker images",
     accepted: ["docker images", "docker image ls"],
     grammar: [
-      { token: "docker images", desc: "List locally cached container images, tags, and sizes" }
+      { token: "docker images", desc: "List locally stored container images" }
     ],
     sampleOutput: `REPOSITORY   TAG      IMAGE ID       CREATED       SIZE
 frametap     latest   4e81d9a02f1b   2 hours ago   18.4MB`,
-    explanation: "Use `docker system df` to see total disk space consumed by images, build cache, and volumes."
+    explanation: "Shows image repositories, tags, and uncompressed sizes on disk."
   },
   {
     id: "cnt-docker-logs",
     session: "containers",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "docker",
-    title: "Stream live stdout/stderr logs from a container",
-    prompt: "Follow (`-f`) the real-time logs of container `api-gateway`.",
-    hint: "Use `docker logs -f api-gateway`.",
+    title: "Follow live stdout/stderr logs of container api-gateway",
+    prompt: "Stream the live logs of the Docker container named `api-gateway` in real time.",
     canonical: "docker logs -f api-gateway",
     accepted: ["docker logs -f api-gateway", "docker logs --follow api-gateway"],
     grammar: [
-      { token: "docker logs -f", desc: "Stream stdout/stderr logs of a container" }
+      { token: "docker logs -f api-gateway", desc: "Follow live stdout/stderr output of container api-gateway" }
     ],
     sampleOutput: `2026-11-02T18:30:04Z ERROR upstream timeout dialing tcp 10.96.4.12:5432`,
-    explanation: "Pass `--tail 100` (`docker logs -f --tail 100 api-gateway`) to avoid dumping gigabytes of old logs."
+    explanation: "Combine with `--tail 100` on long-running containers."
   },
   {
     id: "cnt-docker-exec",
     session: "containers",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "docker",
-    title: "Open an interactive shell inside a running container",
-    prompt: "Run an interactive (`-it`) `sh` shell inside running container `kind-control-plane`.",
-    hint: "Use `docker exec -it kind-control-plane sh`.",
+    title: "Open an interactive sh shell inside running container kind-control-plane",
+    prompt: "Start an interactive pseudo-TTY `sh` session inside the running Docker container `kind-control-plane`.",
     canonical: "docker exec -it kind-control-plane sh",
     accepted: [
       "docker exec -it kind-control-plane sh",
@@ -1034,207 +1160,205 @@ frametap     latest   4e81d9a02f1b   2 hours ago   18.4MB`,
       "docker exec -ti kind-control-plane sh"
     ],
     grammar: [
-      { token: "docker exec -it", desc: "Run interactive (-i) TTY (-t) process inside a container's namespaces" }
+      { token: "docker exec -it", desc: "Run an interactive (-i) TTY (-t) command inside an existing container" }
     ],
     sampleOutput: `# hostname
 kind-control-plane`,
-    explanation: "In Kind clusters, `docker exec -it kind-control-plane bash` drops you onto the Kubernetes node itself."
-  },
-  {
-    id: "cnt-docker-inspect",
-    session: "containers",
-    difficulty: "Core",
-    tool: "docker",
-    title: "Inspect low-level JSON metadata, host PID, IP, and OOMKilled status of a container",
-    prompt: "Dump the low-level JSON metadata of container `api-gateway`.",
-    hint: "Use `docker inspect api-gateway`.",
-    canonical: "docker inspect api-gateway",
-    accepted: ["docker inspect api-gateway", "docker container inspect api-gateway"],
-    grammar: [
-      { token: "docker inspect", desc: "Return low-level JSON state (State.Pid, State.OOMKilled, NetworkSettings)" }
-    ],
-    sampleOutput: `"State": { "Status": "running", "Pid": 14820, "OOMKilled": false }`,
-    explanation: "`State.Pid` gives you the host PID so you can run `nsenter -t <Pid> -n` from the host."
+    explanation: "Drops you inside the container's namespaces (PID, mount, network, UTS)."
   },
   {
     id: "cnt-docker-stats",
     session: "containers",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "docker",
-    title: "Monitor live CPU, memory, and network I/O across running containers",
-    prompt: "Display a live stream of container resource usage statistics.",
-    hint: "Use `docker stats`.",
+    title: "Monitor live CPU, memory, and I/O usage across running containers",
+    prompt: "Display a live stream of CPU, memory usage/limit, network I/O, and PIDs for all running Docker containers.",
     canonical: "docker stats",
     accepted: ["docker stats", "docker stats --no-stream"],
     grammar: [
-      { token: "docker stats", desc: "Stream live cgroup CPU, memory, and I/O metrics for containers" }
+      { token: "docker stats", desc: "Stream live container cgroup resource metrics" }
     ],
     sampleOutput: `CONTAINER ID   NAME                 CPU %     MEM USAGE / LIMIT     MEM %
 8f3d12a9c4b1   kind-control-plane   12.45%    1.42GiB / 7.75GiB     18.32%`,
-    explanation: "Reads directly from Linux cgroups (`memory.current`, `cpu.stat`)."
+    explanation: "Reads live metrics from the host's cgroup hierarchy."
+  },
+  {
+    id: "cnt-docker-inspect",
+    session: "containers",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "docker",
+    title: "Dump low-level JSON state, host PID, and OOMKilled flag of container api-gateway",
+    prompt: "Inspect the low-level JSON configuration and runtime state of container `api-gateway`.",
+    canonical: "docker inspect api-gateway",
+    accepted: ["docker inspect api-gateway", "docker container inspect api-gateway"],
+    grammar: [
+      { token: "docker inspect api-gateway", desc: "Output full JSON metadata (State.Pid, State.OOMKilled, Mounts, NetworkSettings)" }
+    ],
+    sampleOutput: `"State": { "Status": "running", "Pid": 14820, "OOMKilled": false }`,
+    explanation: "Reveals `State.OOMKilled`, `State.ExitCode`, `State.Pid` (host PID), and container IP."
   },
   {
     id: "cnt-docker-network-ls",
     session: "containers",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "docker",
-    title: "List all Docker networks",
-    prompt: "List all networks managed by the Docker daemon.",
-    hint: "Use `docker network ls`.",
+    title: "List all Docker networks on the host",
+    prompt: "List all networks created in Docker along with their network drivers.",
     canonical: "docker network ls",
     accepted: ["docker network ls", "docker network list"],
     grammar: [
-      { token: "docker network ls", desc: "List Docker networks and their drivers (bridge, host, null)" }
+      { token: "docker network ls", desc: "List Docker networks (bridge, host, null, overlay)" }
     ],
     sampleOutput: `NETWORK ID     NAME      DRIVER    SCOPE
 7c8d9e0f1a2b   kind      bridge    local`,
-    explanation: "Follow up with `docker network inspect <name>` to see subnet CIDRs and container IPs."
+    explanation: "Shows all bridge, host, and custom networks."
   },
   {
     id: "cnt-docker-network-inspect",
     session: "containers",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "docker",
-    title: "Inspect subnet CIDR, gateway, and attached containers on a Docker network",
-    prompt: "Inspect the JSON details of the Docker network named `kind`.",
-    hint: "Use `docker network inspect kind`.",
+    title: "Inspect subnet CIDR and attached container IPs on Docker network 'kind'",
+    prompt: "Inspect the detailed JSON configuration (subnet CIDR, gateway, and attached containers) of the Docker network named `kind`.",
     canonical: "docker network inspect kind",
     accepted: ["docker network inspect kind", "docker network inspect bridge"],
     grammar: [
-      { token: "docker network inspect kind", desc: "Show IPAM subnet, gateway, and attached container endpoints" }
+      { token: "docker network inspect kind", desc: "Show IPAM subnet/gateway and connected container endpoints for network 'kind'" }
     ],
     sampleOutput: `"IPAM": { "Config": [{ "Subnet": "172.18.0.0/16", "Gateway": "172.18.0.1" }] }`,
-    explanation: "Reveals the exact bridge IP of every Kind node container."
+    explanation: "Shows the exact IPv4/IPv6 addresses assigned to every Kind node container."
   },
   {
     id: "cnt-docker-events",
     session: "containers",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "docker",
-    title: "Stream real-time lifecycle events (oom, die, start) from the Docker daemon",
-    prompt: "Stream real-time events from the Docker daemon.",
-    hint: "Use `docker events`.",
+    title: "Stream real-time container lifecycle events (oom, die, start) from Docker",
+    prompt: "Watch real-time lifecycle events emitted by the Docker daemon.",
     canonical: "docker events",
     accepted: ["docker events", "docker system events"],
     grammar: [
-      { token: "docker events", desc: "Stream real-time container/network/volume lifecycle events" }
+      { token: "docker events", desc: "Stream real-time daemon events (container start, die, oom, network connect)" }
     ],
-    sampleOutput: `2026-11-02T18:34:11Z container oom c19a04e2b77d (name=sniffer-test)
-2026-11-02T18:34:11Z container die c19a04e2b77d (exitCode=137)`,
-    explanation: "Catches transient crash loops and OOM kills in real time."
+    sampleOutput: `2026-11-02T18:34:11Z container oom c19a04e2b77d (name=sniffer-test)`,
+    explanation: "Immediately confirms if a container was killed by the cgroup OOM killer (`container oom`)."
   },
   {
     id: "cnt-crictl-ps",
     session: "containers",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "crictl",
-    title: "List all containers on a Kubernetes node using containerd's crictl",
-    prompt: "On a Kubernetes worker node using `containerd`, list all containers including exited ones (`-a`) via `crictl`.",
-    hint: "Use `crictl ps -a`.",
+    title: "List all containers on a Kubernetes node using containerd's CRI CLI",
+    prompt: "You SSH'd into a Kubernetes worker node running `containerd`. List all containers on the node—including exited ones—using the CRI CLI (`crictl`).",
     canonical: "crictl ps -a",
     accepted: ["crictl ps -a", "crictl ps --all"],
     grammar: [
-      { token: "crictl ps -a", desc: "List all CRI containers (Running and Exited) on the node" }
+      { token: "crictl ps -a", desc: "List all CRI containers (Running and Exited) on the local Kubernetes node" }
     ],
     sampleOutput: `CONTAINER       IMAGE           CREATED       STATE     NAME           ATTEMPT
 4b2e91f0a11c2   92b1e3f80c21a   3 hours ago   Running   cilium-agent   0`,
-    explanation: "Essential when `kube-apiserver` or `kubelet` is down and `kubectl` cannot reach the cluster."
+    explanation: "When `kube-apiserver` or `kubelet` is down, `crictl` on the node is how you inspect static pods (`etcd`, `kube-apiserver`, `cilium`)."
   },
   {
     id: "cnt-crictl-pods",
     session: "containers",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "crictl",
     title: "List all Pod sandboxes on a Kubernetes worker node using crictl",
-    prompt: "List all Pod sandboxes on the local node using `crictl`.",
-    hint: "Use `crictl pods`.",
+    prompt: "On a Kubernetes node, list all Pod sandboxes managed by the Container Runtime Interface using `crictl`.",
     canonical: "crictl pods",
     accepted: ["crictl pods"],
     grammar: [
-      { token: "crictl pods", desc: "List Pod sandboxes managed by the CRI runtime on the node" }
+      { token: "crictl pods", desc: "List Pod sandboxes on the local node" }
     ],
     sampleOutput: `POD ID          CREATED       STATE   NAME           NAMESPACE     ATTEMPT
 e81a02c4d91b0   3 hours ago   Ready   cilium-7x92k   kube-system   0`,
-    explanation: "Use `crictl inspectp <POD_ID>` to inspect the pod sandbox's network namespace path and IP."
+    explanation: "Each Pod sandbox holds the shared network namespace (`netns`) for all containers in that Pod."
   },
   {
     id: "cnt-crictl-logs",
     session: "containers",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "crictl",
-    title: "Fetch logs of a crashed container directly on a Kubernetes node",
-    prompt: "Container `9d01a8c3e22f1` exited on a worker node. Fetch its logs using `crictl`.",
-    hint: "Use `crictl logs 9d01a8c3e22f1`.",
+    title: "Fetch container logs directly from containerd using crictl",
+    prompt: "Container `9d01a8c3e22f1` crashed on a worker node and the Kubernetes API server is unreachable. Fetch its logs using `crictl`.",
     canonical: "crictl logs 9d01a8c3e22f1",
     accepted: ["crictl logs 9d01a8c3e22f1", "crictl logs -f 9d01a8c3e22f1"],
     grammar: [
-      { token: "crictl logs <ID>", desc: "Fetch container logs directly from containerd/CRI" }
+      { token: "crictl logs <container-id>", desc: "Read container logs directly from the local CRI runtime" }
     ],
     sampleOutput: `FATAL failed to open AF_PACKET socket: operation not permitted (missing CAP_NET_RAW)`,
-    explanation: "Use `crictl inspect 9d01a8c3e22f1` to inspect container capabilities, mounts, and PID."
+    explanation: "You can also run `crictl inspect 9d01a8c3e22f1` to inspect capabilities, mounts, and host PID."
   },
 
   // ============================================================================
-  // 5. LINUX SERVICES, SYSTEMD & KERNEL LOGS
+  // TRACK 5: LINUX SERVICES, SYSTEMD & KERNEL LOGS
   // ============================================================================
   {
     id: "sys-systemctl-status",
     session: "systemd-logs",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "systemctl",
-    title: "Check runtime status, main PID, and cgroup memory of kubelet",
-    prompt: "Check the systemd service status of `kubelet`.",
-    hint: "Use `systemctl status kubelet`.",
+    title: "Check the runtime status and main PID of the kubelet service",
+    prompt: "Check whether the `kubelet` systemd service is active/running, its main PID, and its recent log lines.",
     canonical: "systemctl status kubelet",
     accepted: ["systemctl status kubelet", "systemctl status kubelet.service"],
     grammar: [
-      { token: "systemctl status kubelet", desc: "Show unit state, main PID, cgroup tasks/memory, and recent logs" }
+      { token: "systemctl status kubelet", desc: "Inspect systemd unit status, cgroup tree, and recent journal lines" }
     ],
     sampleOutput: `● kubelet.service - kubelet: The Kubernetes Node Agent
      Active: active (running) since Mon 2026-11-02 09:00:12 UTC; 9h ago`,
-    explanation: "First command to run on a Kubernetes node when the node status flips to `NotReady`."
+    explanation: "First check when a Kubernetes worker node flips to `NotReady`."
   },
   {
     id: "sys-systemctl-restart",
     session: "systemd-logs",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "systemctl",
-    title: "Restart a systemd service after changing its config",
-    prompt: "Restart the `containerd` systemd service.",
-    hint: "Use `systemctl restart containerd`.",
+    title: "Restart the containerd systemd service",
+    prompt: "You updated `/etc/containerd/config.toml`. Restart the `containerd` systemd service so the new configuration takes effect.",
     canonical: "systemctl restart containerd",
     accepted: ["systemctl restart containerd", "systemctl restart containerd.service"],
     grammar: [
-      { token: "systemctl restart containerd", desc: "Stop and start the containerd.service unit" }
+      { token: "systemctl restart containerd", desc: "Stop and start the containerd systemd service" }
     ],
-    sampleOutput: `(containerd.service restarted)`,
-    explanation: "If you edited `/etc/systemd/system/*.service`, run `systemctl daemon-reload` before `systemctl restart`."
+    sampleOutput: `(containerd.service restarted cleanly)`,
+    explanation: "If you modified a `.service` unit file itself, run `systemctl daemon-reload` first."
   },
   {
-    id: "sys-systemctl-failed",
+    id: "sys-journalctl-f",
     session: "systemd-logs",
-    difficulty: "Intermediate",
-    tool: "systemctl",
-    title: "List all systemd units currently in a failed state",
-    prompt: "You just logged into a degraded Linux host. List all systemd units that are in the `--failed` state.",
-    hint: "Use `systemctl list-units --failed` (or `systemctl --failed`).",
-    canonical: "systemctl list-units --failed",
-    accepted: ["systemctl list-units --failed", "systemctl --failed"],
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "journalctl",
+    title: "Stream all new systemd journal log entries in real time",
+    prompt: "Follow the system-wide systemd journal in real time so new log messages stream to your terminal.",
+    canonical: "journalctl -f",
+    accepted: ["journalctl -f"],
     grammar: [
-      { token: "systemctl list-units --failed", desc: "List only units that exited with an error or failed health check" }
+      { token: "journalctl -f", desc: "Follow the live systemd journal stream" }
     ],
-    sampleOutput: `  UNIT               LOAD   ACTIVE SUB    DESCRIPTION
-● kubelet.service    loaded failed failed kubelet: The Kubernetes Node Agent`,
-    explanation: "Immediately surfaces any broken daemon across the entire OS."
+    sampleOutput: `Nov 02 22:12:01 node-1 sshd[8192]: Accepted publickey for sanjeev`,
+    explanation: "Equivalent to `tail -f /var/log/syslog` on systemd-based Linux distributions."
   },
   {
     id: "sys-journalctl-unit",
     session: "systemd-logs",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "journalctl",
-    title: "Follow real-time systemd journal logs for kubelet",
-    prompt: "Stream (`-f`) the systemd journal logs for the `kubelet` unit (`-u kubelet`).",
-    hint: "Use `journalctl -u kubelet -f`.",
+    title: "Stream real-time systemd journal logs specifically for kubelet",
+    prompt: "Follow the live systemd journal filtered specifically for the `kubelet` service unit.",
     canonical: "journalctl -u kubelet -f",
     accepted: [
       "journalctl -u kubelet -f",
@@ -1243,122 +1367,120 @@ e81a02c4d91b0   3 hours ago   Ready   cilium-7x92k   kube-system   0`,
       "journalctl -uf kubelet"
     ],
     grammar: [
-      { token: "journalctl -u kubelet", desc: "Filter logs for unit kubelet.service" },
-      { token: "-f", desc: "Follow new log entries in real time" }
+      { token: "-u kubelet", desc: "Filter logs for unit kubelet.service" },
+      { token: "-f", desc: "Follow live log output" }
     ],
     sampleOutput: `Nov 02 18:36:10 node-1 kubelet[1294]: E1102 "Error syncing pod" err="cni failed to set up pod network"`,
-    explanation: "Essential for diagnosing CNI plugin errors, volume mount timeouts, and certificate expiration on nodes."
+    explanation: "Pinpoints CNI plugin failures, PLEG health issues, and certificate errors on a worker node."
   },
   {
     id: "sys-journalctl-xe",
     session: "systemd-logs",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "journalctl",
     title: "Jump to the end of the systemd journal with explanatory error context",
-    prompt: "Run `journalctl` with the flags that jump to the end of the logs (`-e`) and attach explanatory catalog text (`-x`).",
-    hint: "Use `journalctl -xe`.",
+    prompt: "A systemd daemon just failed to start. Open `journalctl` jumped directly to the end of the log with explanatory catalog messages enabled.",
     canonical: "journalctl -xe",
     accepted: ["journalctl -xe", "journalctl -ex"],
     grammar: [
-      { token: "-x", desc: "Add message catalog explanations" },
-      { token: "-e", desc: "Jump straight to the end of the journal" }
+      { token: "-x", desc: "Augment log lines with explanatory catalog text" },
+      { token: "-e", desc: "Jump immediately to the end of the journal" }
     ],
     sampleOutput: `░░ The unit nginx.service has entered the 'failed' state with result 'exit-code'.`,
-    explanation: "Use `journalctl -b -1` when a machine rebooted unexpectedly and you want to read the logs from the *previous* boot!"
+    explanation: "Also remember `journalctl -b -1` to inspect logs from the previous boot after an unexpected kernel panic/reboot."
+  },
+  {
+    id: "sys-systemctl-failed",
+    session: "systemd-logs",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "systemctl",
+    title: "List all systemd units currently in a failed state",
+    prompt: "List all systemd services/units on the host that are currently in the `--failed` state.",
+    canonical: "systemctl list-units --failed",
+    accepted: ["systemctl list-units --failed", "systemctl --failed"],
+    grammar: [
+      { token: "systemctl list-units --failed", desc: "Filter unit list to only failed services" }
+    ],
+    sampleOutput: `● kubelet.service loaded failed failed kubelet: The Kubernetes Node Agent`,
+    explanation: "Quickly spots any crashed background daemon across the entire host."
   },
   {
     id: "sys-dmesg-t",
     session: "systemd-logs",
-    difficulty: "Core",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "dmesg",
-    title: "Inspect Linux kernel ring buffer messages with human-readable timestamps",
-    prompt: "Print the kernel ring buffer (`dmesg`) with human-readable timestamps (`-T`).",
-    hint: "Use `dmesg -T`.",
+    title: "Inspect the Linux kernel ring buffer with human-readable timestamps",
+    symptomOutput: `Last State:     Terminated
+  Reason:       Error
+  Exit Code:    137`,
+    prompt: "A process exited with code `137` (`SIGKILL`) and you suspect the Linux kernel OOM killer or a kernel subsystem event. Print the kernel ring buffer (`dmesg`) with human-readable timestamps.",
     canonical: "dmesg -T",
     accepted: ["dmesg -T", "dmesg --ctime", "dmesg -Tw"],
     grammar: [
-      { token: "dmesg", desc: "Print kernel ring buffer" },
-      { token: "-T", desc: "Convert raw boot seconds into human-readable timestamps" }
+      { token: "dmesg", desc: "Print kernel ring buffer messages" },
+      { token: "-T", desc: "Format timestamps as human-readable local dates/times" }
     ],
-    sampleOutput: `[Mon Nov  2 18:34:11 2026] Out of memory: Killed process 9842 (frametap)
+    sampleOutput: `[Mon Nov  2 18:34:11 2026] Out of memory: Killed process 9842 (frametap) anon-rss:512400kB
 [Mon Nov  2 18:35:02 2026] nf_conntrack: nf_conntrack: table full, dropping packet`,
-    explanation: "Exposes kernel OOM kills, `nf_conntrack: table full` packet drops, hardware NIC resets, and filesystem I/O errors."
+    explanation: "`dmesg -T` is the authoritative source for kernel OOM kills, `nf_conntrack: table full` packet drops, and NIC/disk hardware resets."
   },
 
   // ============================================================================
-  // 6. KUBERNETES (kubectl) DEBUGGING
+  // TRACK 6: KUBERNETES (kubectl) DEBUGGING
   // ============================================================================
   {
     id: "k8s-get-pods-wide",
     session: "kubectl",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "kubectl",
-    title: "List all pods across all namespaces with node placement and pod IPs",
-    prompt: "List all pods across all namespaces (`-A`) with extended columns (`-o wide`).",
-    hint: "Use `kubectl get pods -A -o wide`.",
+    title: "List all pods across all namespaces with Pod IPs and Node names",
+    prompt: "List all Pods across every namespace with extended columns showing each Pod's IP address and scheduled Node.",
     canonical: "kubectl get pods -A -o wide",
     accepted: [
       "kubectl get pods -A -o wide",
       "kubectl get pods -o wide -A",
       "kubectl get po -A -o wide",
-      "kubectl get po -o wide -A"
+      "kubectl get po -o wide -A",
+      "kubectl get pods --all-namespaces -o wide"
     ],
     grammar: [
       { token: "kubectl get pods -A", desc: "List pods across all namespaces" },
-      { token: "-o wide", desc: "Include IP and NODE columns" }
+      { token: "-o wide", desc: "Output additional IP and NODE columns" }
     ],
     sampleOutput: `NAMESPACE   NAME                           READY   STATUS             IP           NODE
 prod        payment-api-6d4f8b9c7-x2k9p    0/1     CrashLoopBackOff   10.244.1.48  kind-worker`,
-    explanation: "Immediately shows the Pod IP and worker node for any failing workload."
+    explanation: "Immediately tells you which worker node and Pod IP a workload is running on."
   },
   {
     id: "k8s-describe-pod",
     session: "kubectl",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "kubectl",
-    title: "Inspect detailed pod state, exit codes, and kubelet Events",
-    prompt: "Run `kubectl describe` on pod `payment-api`.",
-    hint: "Use `kubectl describe pod payment-api`.",
+    title: "Inspect detailed pod conditions, exit codes, and Events for payment-api",
+    prompt: "Pod `payment-api` is stuck in `Pending` or `CrashLoopBackOff`. Inspect its detailed state, container termination reasons, and kubelet Events.",
     canonical: "kubectl describe pod payment-api",
     accepted: ["kubectl describe pod payment-api", "kubectl describe po payment-api", "kubectl describe pod/payment-api"],
     grammar: [
-      { token: "kubectl describe pod payment-api", desc: "Show container states, exit codes, and Events for pod payment-api" }
+      { token: "kubectl describe pod payment-api", desc: "Show detailed human-readable state and Events for pod payment-api" }
     ],
-    sampleOutput: `Last State:     Terminated
-  Reason:       OOMKilled
-  Exit Code:    137`,
-    explanation: "Check `Last State` for `OOMKilled` (`Exit Code: 137`) and `Events:` for scheduling/image/probe failures."
-  },
-  {
-    id: "k8s-logs-previous",
-    session: "kubectl",
-    difficulty: "Intermediate",
-    tool: "kubectl",
-    title: "Fetch logs from the previous crashed container instance",
-    prompt: "Pod `payment-api` is in `CrashLoopBackOff`. Fetch the logs from its **previous** crashed container instance (`--previous` / `-p`).",
-    hint: "Use `kubectl logs payment-api --previous`.",
-    canonical: "kubectl logs payment-api --previous",
-    accepted: [
-      "kubectl logs payment-api --previous",
-      "kubectl logs -p payment-api",
-      "kubectl logs payment-api -p",
-      "kubectl logs --previous payment-api"
-    ],
-    grammar: [
-      { token: "kubectl logs payment-api", desc: "Fetch container logs" },
-      { token: "--previous", desc: "(Or -p) Fetch logs of the previous terminated container instance" }
-    ],
-    sampleOutput: `panic: runtime error: invalid memory address or nil pointer dereference`,
-    explanation: "Without `--previous`, `kubectl logs` only queries the newly restarted container."
+    sampleOutput: `Last State:     Terminated (Reason: OOMKilled, Exit Code: 137)
+Events:
+  Warning  BackOff  12s (x5 over 92s)  kubelet  Back-off restarting failed container`,
+    explanation: "The bottom `Events:` section reveals scheduling failures, image pull errors, CNI setup issues, and failed probes."
   },
   {
     id: "k8s-exec-shell",
     session: "kubectl",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "kubectl",
-    title: "Open an interactive sh shell inside a running Kubernetes Pod",
-    prompt: "Execute an interactive (`-it`) `sh` shell inside pod `payment-api`.",
-    hint: "Use `kubectl exec -it payment-api -- sh`.",
+    title: "Open an interactive sh shell inside pod payment-api",
+    prompt: "Execute an interactive pseudo-TTY `sh` shell inside the running pod `payment-api`.",
     canonical: "kubectl exec -it payment-api -- sh",
     accepted: [
       "kubectl exec -it payment-api -- sh",
@@ -1367,75 +1489,76 @@ prod        payment-api-6d4f8b9c7-x2k9p    0/1     CrashLoopBackOff   10.244.1.4
       "kubectl exec -it payment-api sh"
     ],
     grammar: [
-      { token: "kubectl exec -it payment-api", desc: "Run interactive TTY command in pod payment-api" },
-      { token: "-- sh", desc: "Separator (--) followed by command to execute inside the container" }
+      { token: "kubectl exec -it payment-api -- sh", desc: "Open interactive shell inside pod payment-api" }
     ],
-    sampleOutput: `/app # wget -qO- http://localhost:8080/healthz`,
-    explanation: "If a pod has multiple containers (e.g. app + Envoy sidecar), pass `-c <container-name>`."
+    sampleOutput: `/app #`,
+    explanation: "Add `-c <container>` when the pod has multiple containers (such as an Envoy service-mesh sidecar)."
+  },
+  {
+    id: "k8s-top-pods",
+    session: "kubectl",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "kubectl",
+    title: "View live CPU and memory usage of pods across all namespaces",
+    prompt: "Query live CPU (millicores) and memory usage for all pods across all namespaces using `kubectl top`.",
+    canonical: "kubectl top pods -A",
+    accepted: ["kubectl top pods -A", "kubectl top pod -A", "kubectl top po -A"],
+    grammar: [
+      { token: "kubectl top pods -A", desc: "Show live pod CPU and memory metrics across all namespaces" }
+    ],
+    sampleOutput: `NAMESPACE   NAME                           CPU(cores)   MEMORY(bytes)
+prod        payment-api-6d4f8b9c7-x2k9p    420m         498Mi`,
+    explanation: "Use `kubectl top nodes` to inspect node-level CPU and memory pressure."
+  },
+  {
+    id: "k8s-logs-previous",
+    session: "kubectl",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "kubectl",
+    title: "Fetch logs from the previous crashed container instance of payment-api",
+    prompt: "Pod `payment-api` just restarted in a `CrashLoopBackOff`, so its current container log is empty. Fetch the logs from its **previous** terminated container instance.",
+    canonical: "kubectl logs payment-api --previous",
+    accepted: [
+      "kubectl logs payment-api --previous",
+      "kubectl logs -p payment-api",
+      "kubectl logs payment-api -p",
+      "kubectl logs --previous payment-api"
+    ],
+    grammar: [
+      { token: "--previous", desc: "(Or -p) Print logs from the previous crashed container instantiation" }
+    ],
+    sampleOutput: `panic: runtime error: invalid memory address or nil pointer dereference`,
+    explanation: "Retrieves the panic stack trace or fatal error from the container that just died."
   },
   {
     id: "k8s-get-events-sorted",
     session: "kubectl",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "kubectl",
-    title: "List cluster events sorted chronologically by creationTimestamp",
-    prompt: "List Kubernetes events sorted by `.metadata.creationTimestamp`.",
-    hint: "Use `kubectl get events --sort-by=.metadata.creationTimestamp`.",
+    title: "List Kubernetes events sorted chronologically by creationTimestamp",
+    prompt: "List cluster events in the current namespace sorted chronologically by `.metadata.creationTimestamp`.",
     canonical: "kubectl get events --sort-by=.metadata.creationTimestamp",
     accepted: [
       "kubectl get events --sort-by=.metadata.creationTimestamp",
       "kubectl get ev --sort-by=.metadata.creationTimestamp"
     ],
     grammar: [
-      { token: "--sort-by=.metadata.creationTimestamp", desc: "Order events chronologically from oldest to newest" }
+      { token: "--sort-by=.metadata.creationTimestamp", desc: "Sort events chronologically using JSONPath" }
     ],
-    sampleOutput: `2m05s  Warning  Unhealthy  pod/payment-api  Readiness probe failed: HTTP probe failed with statuscode: 503`,
-    explanation: "Gives a chronological timeline of scheduling, probe, and CNI events."
-  },
-  {
-    id: "k8s-get-endpoints",
-    session: "kubectl",
-    difficulty: "Intermediate",
-    tool: "kubectl",
-    title: "Verify whether a Kubernetes Service has healthy backing Pod IPs",
-    symptomOutput: `$ curl http://payment-svc.default.svc.cluster.local:8080
-curl: (7) Failed to connect to payment-svc.default.svc.cluster.local port 8080: Connection refused`,
-    prompt: "ClusterIP service `payment-svc` refuses connections. Check the `endpoints` object for `payment-svc` to see if any Ready Pod IPs are registered behind the Service.",
-    hint: "Use `kubectl get endpoints payment-svc` (or `kubectl get ep payment-svc`).",
-    canonical: "kubectl get endpoints payment-svc",
-    accepted: ["kubectl get endpoints payment-svc", "kubectl get ep payment-svc", "kubectl describe endpoints payment-svc"],
-    grammar: [
-      { token: "kubectl get endpoints payment-svc", desc: "Inspect populated Pod IP:Port endpoints for Service payment-svc" }
-    ],
-    sampleOutput: `NAME          ENDPOINTS   AGE
-payment-svc   <none>      14m`,
-    explanation: "`ENDPOINTS: <none>` means either the Service label selector doesn't match the Pod labels, or all Pods are failing their `readinessProbe`."
-  },
-  {
-    id: "k8s-top-pods",
-    session: "kubectl",
-    difficulty: "Core",
-    tool: "kubectl",
-    title: "Check live CPU and memory consumption of pods across all namespaces",
-    prompt: "Use `kubectl top` to view live CPU (millicores) and memory (MiB) usage of pods across all namespaces (`-A`).",
-    hint: "Use `kubectl top pods -A`.",
-    canonical: "kubectl top pods -A",
-    accepted: ["kubectl top pods -A", "kubectl top pod -A", "kubectl top po -A"],
-    grammar: [
-      { token: "kubectl top pods -A", desc: "Query metrics-server for live pod CPU and memory usage across all namespaces" }
-    ],
-    sampleOutput: `NAMESPACE   NAME                           CPU(cores)   MEMORY(bytes)
-prod        payment-api-6d4f8b9c7-x2k9p    420m         498Mi`,
-    explanation: "Add `--containers` (`kubectl top pods -A --containers`) to break down usage per container inside multi-container pods."
+    sampleOutput: `2m05s  Warning  Unhealthy  pod/payment-api  Readiness probe failed: HTTP 503`,
+    explanation: "Plain `kubectl get events` is unsorted; sorting by `.metadata.creationTimestamp` gives a true incident timeline."
   },
   {
     id: "k8s-rollout-undo",
     session: "kubectl",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "kubectl",
-    title: "Immediately roll back a broken Kubernetes Deployment to its previous revision",
-    prompt: "A canary release of Deployment `payment-api` is throwing 500s. Roll back `deployment/payment-api` to the previous working ReplicaSet revision.",
-    hint: "Use `kubectl rollout undo deployment/payment-api`.",
+    title: "Roll back Deployment payment-api to its previous revision",
+    prompt: "A bad release of `deployment/payment-api` is causing errors. Roll back `deployment/payment-api` to its previous working revision.",
     canonical: "kubectl rollout undo deployment/payment-api",
     accepted: [
       "kubectl rollout undo deployment/payment-api",
@@ -1444,470 +1567,501 @@ prod        payment-api-6d4f8b9c7-x2k9p    420m         498Mi`,
       "kubectl rollout undo deploy payment-api"
     ],
     grammar: [
-      { token: "kubectl rollout undo", desc: "Revert a workload to its previous revision" },
-      { token: "deployment/payment-api", desc: "Target Deployment resource" }
+      { token: "kubectl rollout undo deployment/payment-api", desc: "Revert Deployment to its prior ReplicaSet revision" }
     ],
     sampleOutput: `deployment.apps/payment-api rolled back`,
-    explanation: "Follow up with `kubectl rollout status deployment/payment-api` to watch the rollback complete in real time."
+    explanation: "Monitor rollback progress with `kubectl rollout status deployment/payment-api`."
   },
   {
     id: "k8s-port-forward",
     session: "kubectl",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "kubectl",
-    title: "Forward local port 9090 to port 9090 on a Prometheus pod for debugging",
-    prompt: "Forward local port `9090` to port `9090` (`9090:9090`) on pod `prometheus-0`.",
-    hint: "Use `kubectl port-forward prometheus-0 9090:9090`.",
+    title: "Tunnel local port 9090 to port 9090 on pod prometheus-0",
+    prompt: "Forward local TCP port `9090` to port `9090` on pod `prometheus-0`.",
     canonical: "kubectl port-forward prometheus-0 9090:9090",
     accepted: [
       "kubectl port-forward prometheus-0 9090:9090",
       "kubectl port-forward pod/prometheus-0 9090:9090"
     ],
     grammar: [
-      { token: "kubectl port-forward", desc: "Tunnel local TCP port to a Pod or Service via the K8s API server" },
-      { token: "prometheus-0 9090:9090", desc: "Target pod and <local-port>:<remote-port>" }
+      { token: "kubectl port-forward prometheus-0 9090:9090", desc: "Forward local 127.0.0.1:9090 to pod port 9090" }
     ],
     sampleOutput: `Forwarding from 127.0.0.1:9090 -> 9090`,
-    explanation: "Lets you hit internal admin/metrics/pprof endpoints (`localhost:9090`) without exposing an Ingress or LoadBalancer."
+    explanation: "Useful for accessing internal metrics, admin UIs, or Go `pprof` endpoints on a pod."
+  },
+  {
+    id: "k8s-get-endpoints",
+    session: "kubectl",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "kubectl",
+    title: "Check whether Service payment-svc has any Ready backend Pod IPs",
+    symptomOutput: `$ curl http://payment-svc.default.svc.cluster.local:8080
+curl: (7) Failed to connect to payment-svc.default.svc.cluster.local port 8080: Connection refused`,
+    prompt: "Requests to ClusterIP service `payment-svc` fail with `Connection refused`. Inspect the `endpoints` resource for `payment-svc` to verify whether any Ready Pod IPs are registered behind the Service.",
+    canonical: "kubectl get endpoints payment-svc",
+    accepted: ["kubectl get endpoints payment-svc", "kubectl get ep payment-svc", "kubectl describe endpoints payment-svc"],
+    grammar: [
+      { token: "kubectl get endpoints payment-svc", desc: "Show backend Pod IP:Port targets populated for Service payment-svc" }
+    ],
+    sampleOutput: `NAME          ENDPOINTS   AGE
+payment-svc   <none>      14m`,
+    explanation: "If `ENDPOINTS` is `<none>`, either the Service's label selector doesn't match the Pod labels, or all matching Pods are failing their `readinessProbe`."
+  },
+  {
+    id: "k8s-drain-node",
+    session: "kubectl",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "kubectl",
+    title: "Safely drain node kind-worker for kernel maintenance while ignoring DaemonSets",
+    prompt: "Evict all workloads from node `kind-worker` for maintenance while ignoring DaemonSet-managed pods (`--ignore-daemonsets`).",
+    canonical: "kubectl drain kind-worker --ignore-daemonsets",
+    accepted: [
+      "kubectl drain kind-worker --ignore-daemonsets",
+      "kubectl drain kind-worker --ignore-daemonsets --delete-emptydir-data"
+    ],
+    grammar: [
+      { token: "kubectl drain kind-worker", desc: "Cordon node unschedulable and gracefully evict pods" },
+      { token: "--ignore-daemonsets", desc: "Skip DaemonSet pods (like cilium-agent and kube-proxy) that belong on every node" }
+    ],
+    sampleOutput: `node/kind-worker cordoned
+node/kind-worker drained`,
+    explanation: "Once maintenance is complete, run `kubectl uncordon kind-worker` to allow scheduling again."
   },
 
   // ============================================================================
-  // 7. HELM, CILIUM & HUBBLE (eBPF / CNI)
+  // TRACK 7: HELM, CILIUM & HUBBLE (eBPF / CNI)
   // ============================================================================
   {
     id: "hc-helm-list",
     session: "helm-cilium",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "helm",
     title: "List all deployed Helm releases across all namespaces",
-    prompt: "List all Helm releases across all namespaces (`-A`).",
-    hint: "Use `helm list -A`.",
+    prompt: "List all Helm releases installed across every namespace in the cluster.",
     canonical: "helm list -A",
     accepted: ["helm list -A", "helm ls -A", "helm list --all-namespaces"],
     grammar: [
-      { token: "helm list -A", desc: "List Helm releases across all Kubernetes namespaces" }
+      { token: "helm list -A", desc: "List Helm releases across all namespaces" }
     ],
-    sampleOutput: `NAME        NAMESPACE     REVISION  STATUS    CHART           APP VERSION
-cilium      kube-system   2         deployed  cilium-1.16.3   1.16.3`,
-    explanation: "Without `-A`, `helm list` only checks your active namespace."
+    sampleOutput: `NAME     NAMESPACE     REVISION  STATUS    CHART          APP VERSION
+cilium   kube-system   2         deployed  cilium-1.16.3  1.16.3`,
+    explanation: "Without `-A`, Helm only lists releases in your current kubeconfig namespace."
+  },
+  {
+    id: "hc-cilium-status",
+    session: "helm-cilium",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "cilium",
+    title: "Check Cilium CNI agent, Operator, and Hubble health",
+    prompt: "Run the Cilium CLI command to inspect the health of Cilium agents, Operator, and Hubble across the cluster.",
+    canonical: "cilium status",
+    accepted: ["cilium status", "cilium status --wait"],
+    grammar: [
+      { token: "cilium status", desc: "Check Cilium DaemonSet, Operator, IPAM, and Hubble status" }
+    ],
+    sampleOutput: `Cilium:             OK
+Operator:           OK
+Hubble Relay:       OK`,
+    explanation: "First command to run when checking CNI health."
+  },
+  {
+    id: "hc-hubble-observe",
+    session: "helm-cilium",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "hubble",
+    title: "Observe live network flows across the cluster using Hubble",
+    prompt: "Use the Hubble CLI to observe network flows captured by Cilium eBPF.",
+    canonical: "hubble observe",
+    accepted: ["hubble observe", "hubble observe -f"],
+    grammar: [
+      { token: "hubble observe", desc: "Query L3/L4/L7 eBPF network flow telemetry from Hubble" }
+    ],
+    sampleOutput: `Nov  2 18:40:02 default/frontend-7d4b:41822 -> kube-system/coredns-8b:53 to-endpoint FORWARDED UDP`,
+    explanation: "Provides instant visibility into pod-to-pod and DNS flows without running `tcpdump` on nodes."
   },
   {
     id: "hc-helm-get-values",
     session: "helm-cilium",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "helm",
-    title: "Inspect user-supplied values for a deployed Helm release",
-    prompt: "Fetch the custom configuration values applied to the `cilium` Helm release.",
-    hint: "Use `helm get values cilium`.",
+    title: "Inspect custom override values applied to Helm release 'cilium'",
+    prompt: "Fetch the user-supplied configuration values for the deployed Helm release named `cilium`.",
     canonical: "helm get values cilium",
     accepted: ["helm get values cilium", "helm get values cilium -a"],
     grammar: [
-      { token: "helm get values cilium", desc: "Output user-supplied override values for release cilium" }
+      { token: "helm get values cilium", desc: "Download user-supplied override values for release 'cilium'" }
     ],
     sampleOutput: `USER-SUPPLIED VALUES:
 kubeProxyReplacement: true`,
-    explanation: "Add `-a` (`helm get values cilium -a`) to also include computed chart default values."
+    explanation: "Shows exactly which custom Helm values are active in the cluster."
   },
   {
     id: "hc-helm-history",
     session: "helm-cilium",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "helm",
-    title: "View revision history of a Helm release before rolling back",
-    prompt: "Display the revision history of the `prometheus` Helm release.",
-    hint: "Use `helm history prometheus`.",
+    title: "Check revision history of Helm release 'prometheus'",
+    prompt: "Display the revision history of the `prometheus` Helm release so you can see previous revision numbers and statuses.",
     canonical: "helm history prometheus",
     accepted: ["helm history prometheus"],
     grammar: [
-      { token: "helm history prometheus", desc: "Show revision numbers, timestamps, statuses, and chart versions" }
+      { token: "helm history prometheus", desc: "List historical revisions for release 'prometheus'" }
     ],
     sampleOutput: `REVISION  STATUS      CHART             DESCRIPTION
 3         superseded  kube-prom-65.0    Upgrade complete
-4         failed      kube-prom-65.1    Upgrade "prometheus" failed: timed out`,
-    explanation: "Tells you which revision number (`3`) is safe to pass to `helm rollback`."
+4         failed      kube-prom-65.1    Upgrade "prometheus" failed`,
+    explanation: "Always check `helm history` before running `helm rollback`."
   },
   {
     id: "hc-helm-rollback",
     session: "helm-cilium",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "helm",
-    title: "Rollback a failed Helm release to revision 3",
-    prompt: "Roll back the `prometheus` Helm release to revision `3`.",
-    hint: "Use `helm rollback prometheus 3`.",
+    title: "Rollback Helm release 'prometheus' to revision 3",
+    prompt: "Revision 4 of `prometheus` failed. Roll back the `prometheus` Helm release to revision `3`.",
     canonical: "helm rollback prometheus 3",
     accepted: ["helm rollback prometheus 3"],
     grammar: [
       { token: "helm rollback prometheus 3", desc: "Roll back release 'prometheus' to revision 3" }
     ],
     sampleOutput: `Rollback was a success! Happy Helming!`,
-    explanation: "Creates a new revision (Revision 5) matching the state of Revision 3."
+    explanation: "Restores the manifests and configuration from revision 3."
   },
   {
     id: "hc-helm-template",
     session: "helm-cilium",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "helm",
-    title: "Render Helm chart templates locally without installing to a cluster",
-    prompt: "Render the YAML manifests for release `my-app` from chart `./chart` locally to stdout.",
-    hint: "Use `helm template my-app ./chart`.",
+    title: "Render Helm chart templates locally to stdout",
+    prompt: "Render the Kubernetes YAML manifests for release `my-app` from chart directory `./chart` locally without contacting a cluster.",
     canonical: "helm template my-app ./chart",
     accepted: ["helm template my-app ./chart", "helm template ./chart"],
     grammar: [
-      { token: "helm template my-app ./chart", desc: "Render chart templates locally without contacting kube-apiserver" }
+      { token: "helm template my-app ./chart", desc: "Render chart templates locally to stdout" }
     ],
     sampleOutput: `apiVersion: apps/v1
 kind: Deployment`,
-    explanation: "Great for debugging Go template expressions or piping into `kubectl diff -f -`."
-  },
-  {
-    id: "hc-cilium-status",
-    session: "helm-cilium",
-    difficulty: "Core",
-    tool: "cilium",
-    title: "Check Cilium CNI health, Operator status, and Hubble Relay state",
-    prompt: "Run the Cilium CLI command to check overall Cilium health across the cluster.",
-    hint: "Use `cilium status`.",
-    canonical: "cilium status",
-    accepted: ["cilium status", "cilium status --wait"],
-    grammar: [
-      { token: "cilium status", desc: "Inspect Cilium DaemonSet, Operator, Envoy, and Hubble Relay health" }
-    ],
-    sampleOutput: `Cilium:             OK
-Operator:           OK
-Hubble Relay:       OK`,
-    explanation: "First command to run when checking eBPF CNI health."
+    explanation: "Validates template rendering client-side before deploying."
   },
   {
     id: "hc-cilium-connectivity",
     session: "helm-cilium",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "cilium",
-    title: "Run Cilium's automated end-to-end cluster connectivity test suite",
-    prompt: "Run the Cilium CLI command that validates pod-to-pod, service, DNS, and L3/L4/L7 policy connectivity.",
-    hint: "Use `cilium connectivity test`.",
+    title: "Run Cilium's automated end-to-end connectivity test suite",
+    prompt: "Run the Cilium CLI command that deploys test pods and verifies pod-to-pod, service, DNS, and NetworkPolicy connectivity.",
     canonical: "cilium connectivity test",
     accepted: ["cilium connectivity test"],
     grammar: [
-      { token: "cilium connectivity test", desc: "Deploy test pods and run eBPF datapath & policy verification suite" }
+      { token: "cilium connectivity test", desc: "Run end-to-end eBPF datapath and policy verification suite" }
     ],
     sampleOutput: `✅ [cilium-test] All 42 tests (298 actions) successful`,
-    explanation: "Validates that eBPF kube-proxy replacement, masquerading, and cross-node routing work end-to-end."
-  },
-  {
-    id: "hc-cilium-monitor-drop",
-    session: "helm-cilium",
-    difficulty: "Intermediate",
-    tool: "cilium",
-    title: "Stream real-time eBPF datapath packet drops from Cilium",
-    prompt: "Run `cilium monitor` filtered specifically for dropped packets (`--type drop`).",
-    hint: "Use `cilium monitor --type drop`.",
-    canonical: "cilium monitor --type drop",
-    accepted: ["cilium monitor --type drop", "cilium monitor", "cilium-dbg monitor --type drop"],
-    grammar: [
-      { token: "cilium monitor", desc: "Read events from Cilium's kernel eBPF perf/ring buffer" },
-      { token: "--type drop", desc: "Show only packet drop events and their BPF source line/reason" }
-    ],
-    sampleOutput: `xx drop (Policy denied) flow 0x8a41 to endpoint 1042, file bpf_lxc.c:1984, [10.244.1.15:48912 -> 10.244.2.80:6379 tcp SYN]`,
-    explanation: "Prints the exact C file and line in Cilium's eBPF program (`bpf_lxc.c:1984`) that dropped the packet."
-  },
-  {
-    id: "hc-cilium-bpf-lb",
-    session: "helm-cilium",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "cilium",
-    title: "Inspect Cilium's in-kernel eBPF load-balancing map (kube-proxy replacement)",
-    prompt: "When Cilium runs in `kubeProxyReplacement` mode, Kubernetes Services are load-balanced via eBPF maps instead of `iptables`. Run the `cilium bpf` command to list the eBPF load-balancer (`lb`) service map entries.",
-    hint: "Use `cilium bpf lb list`.",
-    canonical: "cilium bpf lb list",
-    accepted: ["cilium bpf lb list", "cilium-dbg bpf lb list", "cilium service list"],
-    grammar: [
-      { token: "cilium bpf lb list", desc: "Dump the kernel eBPF load-balancer map mapping Service VIPs to backend Pod IPs" }
-    ],
-    sampleOutput: `SERVICE ADDRESS        BACKEND ADDRESS (REVNAT_ID) (SLOT)
-10.96.0.10:53/UDP      10.244.0.41:53 (2) (1)
-                       10.244.1.19:53 (2) (2)`,
-    explanation: "In eBPF kube-proxy replacement mode, `iptables -L` won't show Kubernetes Services—`cilium bpf lb list` inspects the actual kernel BPF hash map performing socket-level (`sockops`) and TC DNAT!"
+    explanation: "Verifies that CNI routing, masquerading, and policy enforcement work across nodes."
   },
   {
     id: "hc-hubble-observe-drop",
     session: "helm-cilium",
-    difficulty: "Core",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "hubble",
-    title: "Observe dropped network flows across the cluster using Hubble CLI",
-    prompt: "Use `hubble observe` to filter specifically for flows with verdict `DROPPED` (`--verdict DROPPED`).",
-    hint: "Use `hubble observe --verdict DROPPED`.",
+    title: "Filter Hubble flows to show only DROPPED packets",
+    prompt: "A microservice is timing out after a NetworkPolicy change. Use `hubble observe` to display only flows whose verdict is `DROPPED`.",
     canonical: "hubble observe --verdict DROPPED",
-    accepted: ["hubble observe --verdict DROPPED", "hubble observe"],
+    accepted: ["hubble observe --verdict DROPPED"],
     grammar: [
-      { token: "hubble observe", desc: "Query Cilium Hubble eBPF flow telemetry" },
-      { token: "--verdict DROPPED", desc: "Filter exclusively for packets dropped by NetworkPolicy or L3/L4 errors" }
+      { token: "hubble observe --verdict DROPPED", desc: "Show only flows dropped by Cilium eBPF policy or L3/L4 errors" }
     ],
-    sampleOutput: `Nov  2 18:45:12 default/checkout-5b9d:39104 -> default/payments-8c1a:8443 PolicyVerdict:all EGRESS DROPPED (TCP Flags: SYN)`,
-    explanation: "Tells you immediately whether an `INGRESS` or `EGRESS` policy denied the flow."
+    sampleOutput: `Nov  2 18:45:12 default/checkout-5b9d:39104 -> default/payments-8c1a:8443 PolicyVerdict:all EGRESS DROPPED`,
+    explanation: "Pinpoints whether an `INGRESS` or `EGRESS` policy denied the packet."
+  },
+  {
+    id: "hc-cilium-monitor-drop",
+    session: "helm-cilium",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "cilium",
+    title: "Stream low-level eBPF packet drop events directly from the Cilium agent",
+    prompt: "Run `cilium monitor` filtered specifically for event type `drop`.",
+    canonical: "cilium monitor --type drop",
+    accepted: ["cilium monitor --type drop", "cilium-dbg monitor --type drop"],
+    grammar: [
+      { token: "cilium monitor --type drop", desc: "Stream packet drop events from the kernel eBPF ring buffer" }
+    ],
+    sampleOutput: `xx drop (Policy denied) flow 0x8a41 to endpoint 1042, file bpf_lxc.c:1984`,
+    explanation: "Shows the exact Cilium eBPF C source file and line number (`bpf_lxc.c:1984`) where the packet was dropped."
+  },
+  {
+    id: "hc-cilium-bpf-lb",
+    session: "helm-cilium",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "cilium",
+    title: "Dump Cilium's in-kernel eBPF load-balancer service map",
+    prompt: "Cilium is running in kube-proxy replacement mode. Inspect the kernel eBPF load-balancer (`lb`) map entries using `cilium bpf`.",
+    canonical: "cilium bpf lb list",
+    accepted: ["cilium bpf lb list", "cilium-dbg bpf lb list", "cilium service list"],
+    grammar: [
+      { token: "cilium bpf lb list", desc: "List Service VIP -> Backend Pod IP mappings in Cilium's kernel BPF map" }
+    ],
+    sampleOutput: `SERVICE ADDRESS      BACKEND ADDRESS (REVNAT_ID) (SLOT)
+10.96.0.10:53/UDP    10.244.0.41:53 (2) (1)`,
+    explanation: "Verifies that Kubernetes Service VIPs are programmed into the eBPF datapath."
   },
 
   // ============================================================================
-  // 8. GIT, TERRAFORM, GO & PROMQL
+  // TRACK 8: GIT, TERRAFORM, GO & PROMQL
   // ============================================================================
   {
     id: "gtg-git-status",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "git",
-    title: "Check working tree status",
-    prompt: "Display modified, staged, and untracked files in the Git working tree.",
-    hint: "Use `git status`.",
+    title: "Check Git working tree and staging area status",
+    prompt: "Display modified, staged, and untracked files in your Git repository.",
     canonical: "git status",
     accepted: ["git status", "git status -s"],
     grammar: [
-      { token: "git status", desc: "Show working tree and staging area status" }
+      { token: "git status", desc: "Show working tree status" }
     ],
     sampleOutput: `On branch main
 modified:   pkg/sniffer/afpacket.go`,
-    explanation: "Use `git status -s` for a compact 1-line-per-file view."
-  },
-  {
-    id: "gtg-git-diff-staged",
-    session: "git-tf-go",
-    difficulty: "Core",
-    tool: "git",
-    title: "Inspect line-by-line diff of changes staged for the next commit",
-    prompt: "You ran `git add .` and want to review the exact diff of what is staged before running `git commit`. Run `git diff` for staged changes.",
-    hint: "Use `git diff --staged` (or `git diff --cached`).",
-    canonical: "git diff --staged",
-    accepted: ["git diff --staged", "git diff --cached", "git diff"],
-    grammar: [
-      { token: "git diff --staged", desc: "Compare the staging index against HEAD (whereas bare git diff compares working tree to index)" }
-    ],
-    sampleOutput: `+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, int(htons(unix.ETH_P_ALL)))`,
-    explanation: "Running `git diff --staged` before every commit prevents accidentally committing debug print statements or secrets."
+    explanation: "Shows staged, unstaged, and untracked files."
   },
   {
     id: "gtg-git-log-oneline",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
     tool: "git",
-    title: "View compact commit history with one commit per line",
-    prompt: "Display the Git commit log formatted as one line per commit (`--oneline`).",
-    hint: "Use `git log --oneline`.",
+    title: "View compact Git commit history with one line per commit",
+    prompt: "Display the Git commit log formatted concisely as one line per commit.",
     canonical: "git log --oneline",
     accepted: ["git log --oneline", "git log --oneline --graph"],
     grammar: [
-      { token: "git log --oneline", desc: "Show short 7-char commit SHA and subject line" }
+      { token: "git log --oneline", desc: "Show abbreviated commit SHA and commit title on a single line" }
     ],
     sampleOutput: `9f81a2c (HEAD -> main) feat(arp): decode IPv4 over Ethernet ARP replies`,
-    explanation: "Use `git show <sha>` to inspect the full diff of any commit from `git log --oneline`."
+    explanation: "Combine with `--graph` to visualize branch merges."
+  },
+  {
+    id: "gtg-go-test-all",
+    session: "git-tf-go",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "go",
+    title: "Run all Go unit tests recursively across every package in the module",
+    prompt: "Run `go test` across the current directory and all nested subdirectories/packages.",
+    canonical: "go test ./...",
+    accepted: ["go test ./...", "go test -v ./...", "go test -race ./..."],
+    grammar: [
+      { token: "go test ./...", desc: "Recursively test all packages in the module" }
+    ],
+    sampleOutput: `ok  	github.com/Sanjeevliv/frametap/pkg/ethernet	0.014s`,
+    explanation: "The `./...` pattern matches all packages in the current module tree."
+  },
+  {
+    id: "gtg-go-vet",
+    session: "git-tf-go",
+    level: 1,
+    difficulty: "Level 1 · Foundation",
+    tool: "go",
+    title: "Run Go static analysis across all packages in the module",
+    prompt: "Run Go's built-in static analyzer (`vet`) across all packages in the repository.",
+    canonical: "go vet ./...",
+    accepted: ["go vet ./..."],
+    grammar: [
+      { token: "go vet ./...", desc: "Check all packages for suspicious constructs (e.g. copying mutexes by value)" }
+    ],
+    sampleOutput: `pkg/sniffer/capture.go:88:14: call of fmt.Printf copies lock value: sync.Mutex`,
+    explanation: "Catches subtle bugs that pass compilation."
+  },
+  {
+    id: "gtg-git-diff-staged",
+    session: "git-tf-go",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "git",
+    title: "View the line-by-line diff of changes staged in the Git index",
+    prompt: "You ran `git add` and want to inspect the exact diff of your staged changes before committing.",
+    canonical: "git diff --staged",
+    accepted: ["git diff --staged", "git diff --cached"],
+    grammar: [
+      { token: "git diff --staged", desc: "Diff staged index changes against HEAD" }
+    ],
+    sampleOutput: `+	fd, err := unix.Socket(unix.AF_PACKET, unix.SOCK_RAW, int(htons(unix.ETH_P_ALL)))`,
+    explanation: "Plain `git diff` only shows unstaged changes; `--staged` shows what will actually be committed."
   },
   {
     id: "gtg-git-switch-c",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "git",
-    title: "Create and switch to a new Git branch using git switch",
-    prompt: "Use `git switch` to create (`-c`) and switch to a new branch named `fix/mtu`.",
-    hint: "Use `git switch -c fix/mtu`.",
+    title: "Create and switch to a new branch named fix/mtu using git switch",
+    prompt: "Use `git switch` to create and immediately switch to a new branch named `fix/mtu`.",
     canonical: "git switch -c fix/mtu",
     accepted: ["git switch -c fix/mtu", "git checkout -b fix/mtu"],
     grammar: [
       { token: "git switch -c fix/mtu", desc: "Create (-c) and switch to branch fix/mtu" }
     ],
     sampleOutput: `Switched to a new branch 'fix/mtu'`,
-    explanation: "`git switch` and `git restore` replace the overloaded legacy `git checkout` command."
+    explanation: "Modern replacement for `git checkout -b`."
   },
   {
     id: "gtg-git-restore",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "git",
-    title: "Discard uncommitted local modifications in a file using git restore",
-    prompt: "Discard your unstaged working-tree edits in `main.go` using `git restore`.",
-    hint: "Use `git restore main.go`.",
+    title: "Discard unstaged working-tree edits in main.go",
+    prompt: "Discard uncommitted working-tree modifications in `main.go` using `git restore`.",
     canonical: "git restore main.go",
     accepted: ["git restore main.go", "git checkout -- main.go"],
     grammar: [
-      { token: "git restore main.go", desc: "Restore working-tree file main.go from the index (use --staged to unstage)" }
+      { token: "git restore main.go", desc: "Restore working-tree file main.go to match the index" }
     ],
-    sampleOutput: `(main.go restored to clean state)`,
-    explanation: "Use `git restore --staged main.go` to unstage a file after `git add` without losing your working-tree edits."
+    sampleOutput: `(main.go restored)`,
+    explanation: "Add `--staged` (`git restore --staged main.go`) to unstage a file without discarding your edits."
   },
   {
     id: "gtg-git-stash",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "git",
-    title: "Temporarily shelve uncommitted changes onto the Git stash stack",
-    prompt: "Save your uncommitted local modifications to the stash stack so you can switch branches cleanly.",
-    hint: "Use `git stash`.",
+    title: "Shelve uncommitted changes onto the Git stash stack",
+    prompt: "Temporarily save your uncommitted tracked changes onto the Git stash stack so your working tree is clean.",
     canonical: "git stash",
     accepted: ["git stash", "git stash push"],
     grammar: [
-      { token: "git stash", desc: "Push uncommitted tracked modifications onto the stash stack" }
+      { token: "git stash", desc: "Stash local modifications and revert working directory to HEAD" }
     ],
     sampleOutput: `Saved working directory and index state WIP on main: 9f81a2c`,
-    explanation: "Run `git stash pop` later to re-apply and remove the top stash entry."
-  },
-  {
-    id: "gtg-git-bisect",
-    session: "git-tf-go",
-    difficulty: "Intermediate",
-    tool: "git",
-    title: "Start a binary search across Git commits to find a regression",
-    prompt: "Start an interactive `git bisect` session.",
-    hint: "Use `git bisect start`.",
-    canonical: "git bisect start",
-    accepted: ["git bisect start"],
-    grammar: [
-      { token: "git bisect start", desc: "Start binary search across commit history (followed by git bisect bad & git bisect good <sha>)" }
-    ],
-    sampleOutput: `status: waiting for both good and bad commits`,
-    explanation: "Automate regression hunting with `git bisect run go test ./...`."
+    explanation: "Restore stashed changes later with `git stash pop`."
   },
   {
     id: "gtg-tf-state-list",
     session: "git-tf-go",
-    difficulty: "Core",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "terraform",
     title: "List all resources tracked in the Terraform state file",
-    prompt: "List all infrastructure resource addresses in Terraform state.",
-    hint: "Use `terraform state list`.",
+    prompt: "List all infrastructure resource addresses currently tracked in Terraform state.",
     canonical: "terraform state list",
     accepted: ["terraform state list"],
     grammar: [
-      { token: "terraform state list", desc: "List all resource addresses tracked in Terraform state" }
+      { token: "terraform state list", desc: "List resource addresses in Terraform state" }
     ],
     sampleOutput: `aws_vpc.main
-aws_eks_cluster.prod
-helm_release.cilium`,
-    explanation: "Use `terraform state show <resource>` to inspect a specific resource's attributes."
-  },
-  {
-    id: "gtg-tf-plan",
-    session: "git-tf-go",
-    difficulty: "Core",
-    tool: "terraform",
-    title: "Preview infrastructure changes and detect drift with Terraform",
-    prompt: "Run the Terraform command that compares desired `.tf` configuration against live cloud state and prints the execution plan.",
-    hint: "Use `terraform plan`.",
-    canonical: "terraform plan",
-    accepted: ["terraform plan"],
-    grammar: [
-      { token: "terraform plan", desc: "Compute and preview resource additions (+), changes (~), and replacements (-/+)" }
-    ],
-    sampleOutput: `Plan: 1 to add, 1 to change, 0 to destroy.`,
-    explanation: "Always inspect `terraform plan` output for unexpected `must be replaced` (`-/+`) actions before applying."
-  },
-  {
-    id: "gtg-go-test-race",
-    session: "git-tf-go",
-    difficulty: "Core",
-    tool: "go",
-    title: "Run all Go unit tests recursively across the module",
-    prompt: "Run `go test` across all packages in the current repository (`./...`).",
-    hint: "Use `go test ./...`.",
-    canonical: "go test ./...",
-    accepted: ["go test ./...", "go test -v ./...", "go test -race ./..."],
-    grammar: [
-      { token: "go test ./...", desc: "Test all packages in the current module tree (add -race to detect concurrency data races)" }
-    ],
-    sampleOutput: `ok  	github.com/Sanjeevliv/frametap/pkg/ethernet	0.014s`,
-    explanation: "Pass `-race` (`go test -race ./...`) whenever testing concurrent Go code with goroutines and channels."
+aws_eks_cluster.prod`,
+    explanation: "Inspect a single resource's state attributes with `terraform state show <address>`."
   },
   {
     id: "gtg-go-bench",
     session: "git-tf-go",
-    difficulty: "Intermediate",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
     tool: "go",
-    title: "Run Go benchmarks to measure ns/op and heap allocations",
-    prompt: "Run all Go benchmarks in the current package using `go test`.",
-    hint: "Use `go test -bench=.`.",
+    title: "Run all Go benchmarks in the current package",
+    prompt: "Execute all `Benchmark*` functions in the current Go package using `go test`.",
     canonical: "go test -bench=.",
     accepted: ["go test -bench=.", "go test -bench .", "go test -bench=. -benchmem"],
     grammar: [
-      { token: "-bench=.", desc: "Run all Benchmark* functions matching '.'" },
-      { token: "-benchmem", desc: "(Optional) Report heap allocations (B/op and allocs/op)" }
+      { token: "go test -bench=.", desc: "Run all benchmarks matching regex '.'" }
     ],
     sampleOutput: `BenchmarkDecodeEthernet-8   100000000   10.42 ns/op   0 B/op   0 allocs/op`,
-    explanation: "Zero allocations (`0 allocs/op`) on the packet decode path avoids GC latency spikes."
+    explanation: "Add `-benchmem` to measure heap allocations per operation."
   },
   {
-    id: "gtg-go-vet",
+    id: "gtg-git-bisect",
     session: "git-tf-go",
-    difficulty: "Core",
-    tool: "go",
-    title: "Run Go static analysis (go vet) across all packages",
-    prompt: "Run `go vet` across all packages (`./...`).",
-    hint: "Use `go vet ./...`.",
-    canonical: "go vet ./...",
-    accepted: ["go vet ./..."],
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "git",
+    title: "Start a binary search across Git commits to isolate a regression",
+    prompt: "A bug was introduced somewhere in the last 100 commits. Start a `git bisect` session to binary-search the commit history.",
+    canonical: "git bisect start",
+    accepted: ["git bisect start"],
     grammar: [
-      { token: "go vet ./...", desc: "Static checker for suspicious constructs (copied mutexes, printf format bugs, unreachable code)" }
+      { token: "git bisect start", desc: "Begin binary search across commits (mark current with git bisect bad and known-good SHA with git bisect good)" }
     ],
-    sampleOutput: `pkg/sniffer/capture.go:88:14: call of fmt.Printf copies lock value: sync.Mutex`,
-    explanation: "Catches bugs that compile cleanly but fail at runtime."
+    sampleOutput: `status: waiting for both good and bad commits`,
+    explanation: "Run `git bisect run go test ./...` to automatically find the exact breaking commit."
   },
   {
     id: "gtg-go-pprof",
     session: "git-tf-go",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "go",
-    title: "Analyze a Go CPU or heap profile using go tool pprof",
-    prompt: "Open `cpu.prof` using Go's built-in profiler (`pprof`).",
-    hint: "Use `go tool pprof cpu.prof`.",
+    title: "Analyze CPU profile file cpu.prof using Go's pprof tool",
+    prompt: "Open the profile file `cpu.prof` in Go's built-in profiling tool (`pprof`).",
     canonical: "go tool pprof cpu.prof",
     accepted: ["go tool pprof cpu.prof", "go tool pprof"],
     grammar: [
-      { token: "go tool pprof cpu.prof", desc: "Launch interactive CPU/memory/goroutine profile analyzer" }
+      { token: "go tool pprof cpu.prof", desc: "Inspect CPU, heap, or goroutine profiles" }
     ],
     sampleOutput: `(pprof) top
 1.20s 60.00%  syscall.Syscall6`,
-    explanation: "Use `go tool pprof -http=:8081 cpu.prof` to view an interactive flamegraph in your browser."
+    explanation: "Pinpoints CPU hotspots and memory allocations in Go services."
   },
   {
     id: "gtg-promql-rate",
     session: "git-tf-go",
-    difficulty: "Intermediate",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
     tool: "promql",
-    title: "Calculate per-second HTTP request rate over a 5-minute window in PromQL",
-    prompt: "Write the PromQL query to compute the per-second rate of `http_requests_total` over `[5m]`.",
-    hint: "Use `rate(http_requests_total[5m])`.",
+    title: "Query the per-second rate of http_requests_total over a 5-minute window",
+    prompt: "Write the PromQL expression that calculates the per-second rate of increase of the counter `http_requests_total` over a `5m` range window.",
     canonical: "rate(http_requests_total[5m])",
     accepted: ["rate(http_requests_total[5m])", "sum(rate(http_requests_total[5m]))"],
     grammar: [
-      { token: "rate(http_requests_total[5m])", desc: "Per-second average rate of increase of counter over 5 minutes" }
+      { token: "rate(http_requests_total[5m])", desc: "Per-second rate of increase over a 5-minute window" }
     ],
     sampleOutput: `{job="payment-api", status="200"} => 482.19`,
-    explanation: "Always apply `rate()` to Counter metrics before graphing or summing across pods."
+    explanation: "Always wrap Prometheus Counter metrics in `rate()` or `increase()`."
   },
 
   // ============================================================================
-  // 9. MULTI-STEP INCIDENT CHAINS (REAL-WORLD CISCO / SRE LIVE DEBUGGING)
+  // TRACK 9: LEVEL 4 MULTI-STEP PRODUCTION INCIDENT CHAINS
   // ============================================================================
   {
     id: "chain-port-refused",
     session: "cisco-incidents",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "Incident Chain (3 Steps)",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "ss -> journalctl -> systemctl",
     title: "Incident Chain: Service Connection Refused on Port 8080",
-    explanation: "In production debugging, you verify socket bindings (`ss -tulpn`), inspect the service's journal logs (`journalctl -u`), and restart/verify the daemon (`systemctl restart`).",
+    explanation: "In production debugging, you verify socket bindings (`ss -tulpn`), inspect the service's journal logs (`journalctl -u`), and restart the daemon (`systemctl restart`).",
     steps: [
       {
-        prompt: "STEP 1 of 3: External clients get `Connection refused` on port `8080`. First, inspect all listening TCP/UDP sockets with numeric ports and owning processes to see what is bound to `:8080`.",
-        hint: "Use `ss -tulpn`.",
+        prompt: "STEP 1 of 3: External clients get `Connection refused` on TCP port `8080`. First, inspect all listening TCP and UDP sockets with numeric ports and owning processes.",
         canonical: "ss -tulpn",
         accepted: ["ss -tulpn", "lsof -i :8080"],
         output: `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
 tcp   LISTEN 0      4096   127.0.0.1:8080      0.0.0.0:*         users:(("envoy",pid=3109,fd=9))`
       },
       {
-        prompt: "STEP 2 of 3: Look at the output above—`envoy` is bound to loopback `127.0.0.1:8080` instead of `0.0.0.0:8080`! Follow (`-f`) the systemd journal logs for the `envoy` unit (`-u envoy`) to check which config file it loaded.",
-        hint: "Use `journalctl -u envoy -f`.",
+        prompt: "STEP 2 of 3: Look at the output above—`envoy` is bound to loopback `127.0.0.1:8080` instead of `0.0.0.0:8080`! Stream the live systemd journal logs for the `envoy` unit to see which config file it loaded.",
         canonical: "journalctl -u envoy -f",
         accepted: ["journalctl -u envoy -f", "journalctl -fu envoy", "journalctl -u envoy"],
-        output: `Nov 02 22:05:01 node-1 envoy[3109]:loaded listener_address: 127.0.0.1:8080 from /etc/envoy/envoy.yaml`
+        output: `Nov 02 22:05:01 node-1 envoy[3109]: loaded listener_address: 127.0.0.1:8080 from /etc/envoy/envoy.yaml`
       },
       {
         prompt: "STEP 3 of 3: You fixed `/etc/envoy/envoy.yaml` to bind `0.0.0.0:8080`. Now restart the `envoy` systemd service.",
-        hint: "Use `systemctl restart envoy`.",
         canonical: "systemctl restart envoy",
         accepted: ["systemctl restart envoy", "systemctl restart envoy.service"],
         output: `(envoy.service restarted — now listening on 0.0.0.0:8080 ✅)`
@@ -1922,14 +2076,14 @@ tcp   LISTEN 0      4096   127.0.0.1:8080      0.0.0.0:*         users:(("envoy"
   {
     id: "chain-k8s-cilium-drop",
     session: "cisco-incidents",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "Incident Chain (3 Steps)",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "cilium -> hubble -> kubectl",
     title: "Incident Chain: Kubernetes Pod Timeout & Cilium Policy Drop",
-    explanation: "When a Kubernetes microservice times out, first check Cilium health (`cilium status`), then inspect dropped flows with Hubble (`hubble observe --verdict DROPPED`), and verify service endpoints (`kubectl get endpoints`).",
+    explanation: "When a Kubernetes microservice times out, verify Cilium health (`cilium status`), inspect dropped flows (`hubble observe --verdict DROPPED`), and confirm Service endpoints (`kubectl get endpoints`).",
     steps: [
       {
         prompt: "STEP 1 of 3: Pod `checkout` is timing out when calling `payments-svc`. First, check overall Cilium CNI health in the cluster.",
-        hint: "Use `cilium status`.",
         canonical: "cilium status",
         accepted: ["cilium status"],
         output: `Cilium:             OK
@@ -1937,15 +2091,13 @@ Operator:           OK
 Hubble Relay:       OK`
       },
       {
-        prompt: "STEP 2 of 3: Cilium is healthy. Now use the Hubble CLI to observe only flows with verdict `DROPPED` (`--verdict DROPPED`) to see if a NetworkPolicy is blocking `checkout`.",
-        hint: "Use `hubble observe --verdict DROPPED`.",
+        prompt: "STEP 2 of 3: Cilium is healthy. Now use the Hubble CLI to observe only flows whose verdict is `DROPPED`.",
         canonical: "hubble observe --verdict DROPPED",
         accepted: ["hubble observe --verdict DROPPED"],
         output: `Nov  2 22:08:11 default/checkout-5b9d:49120 -> default/payments-8c1a:8443 PolicyVerdict:all EGRESS DROPPED (TCP Flags: SYN)`
       },
       {
         prompt: "STEP 3 of 3: Hubble proved an Egress policy dropped TCP SYN to port 8443! After updating the policy, verify that Service `payments-svc` has healthy backing Pod IPs (`endpoints`).",
-        hint: "Use `kubectl get endpoints payments-svc`.",
         canonical: "kubectl get endpoints payments-svc",
         accepted: ["kubectl get endpoints payments-svc", "kubectl get ep payments-svc"],
         output: `NAME           ENDPOINTS            AGE
@@ -1961,30 +2113,28 @@ payments-svc   10.244.2.80:8443     3d`
   {
     id: "chain-disk-phantom-leak",
     session: "cisco-incidents",
-    difficulty: "Cisco / SRE Scenario",
-    tool: "Incident Chain (3 Steps)",
-    title: "Incident Chain: Node Disk 100% Full After Deleting Logs",
-    explanation: "When `df -h` and `du -sh` disagree after deleting a large log file, `lsof +L1` identifies the process holding the unlinked file descriptor open.",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "df -> lsof -> kill",
+    title: "Incident Chain: Node Disk 98% Full After Deleting Logs",
+    explanation: "When `df -h` still shows a full disk after deleting a huge file, `lsof +L1` identifies the process holding the unlinked file descriptor open.",
     steps: [
       {
-        prompt: "STEP 1 of 3: An alert says disk space is critically low. First, check mounted filesystem usage in human-readable format.",
-        hint: "Use `df -h`.",
+        prompt: "STEP 1 of 3: An alert says disk space is critically low. Check mounted filesystem usage in human-readable format.",
         canonical: "df -h",
         accepted: ["df -h", "df -Th"],
         output: `Filesystem      Size  Used Avail Use% Mounted on
 /dev/nvme0n1p1   50G   49G  1.0G  98% /`
       },
       {
-        prompt: "STEP 2 of 3: You deleted `/var/log/huge.log`, yet `/` is still 98% full! Run `lsof` to list open files with a hard link count less than 1 (`+L1`).",
-        hint: "Use `lsof +L1`.",
+        prompt: "STEP 2 of 3: You deleted `/var/log/huge.log`, yet `/` is still 98% full! Run `lsof` to list open files with a hard link count less than 1 (deleted files).",
         canonical: "lsof +L1",
         accepted: ["lsof +L1", "lsof | grep deleted"],
         output: `COMMAND   PID USER   FD   TYPE DEVICE    SIZE/OFF NLINK NODE NAME
- fluentd 4821 root    9w   REG  259,1 42949672960     0 9182 /var/log/huge.log (deleted)`
+fluentd  4821 root    9w   REG  259,1 42949672960     0 9182 /var/log/huge.log (deleted)`
       },
       {
-        prompt: "STEP 3 of 3: PID `4821` (`fluentd`) is still holding the deleted 40GB file open and ignoring SIGTERM. Forcefully kill PID `4821` with `SIGKILL` (`-9`) to free the disk blocks immediately.",
-        hint: "Use `kill -9 4821`.",
+        prompt: "STEP 3 of 3: PID `4821` (`fluentd`) is still holding the deleted 40GB file open and ignoring SIGTERM. Forcefully terminate PID `4821` with `SIGKILL` (signal 9) to free the disk blocks immediately.",
         canonical: "kill -9 4821",
         accepted: ["kill -9 4821", "kill -KILL 4821"],
         output: `(PID 4821 terminated — 40GB reclaimed immediately on /dev/nvme0n1p1 ✅)`
@@ -1995,5 +2145,332 @@ payments-svc   10.244.2.80:8443     3d`
       { token: "Step 2: lsof +L1", desc: "Locate unlinked open file descriptors" },
       { token: "Step 3: kill -9 4821", desc: "Release open FDs so the kernel frees the blocks" }
     ]
+  },
+
+  // ============================================================================
+  // ADDITIONAL MULTI-VARIATION DRILLS ACROSS ALL TRACKS (LEVELS 1–4)
+  // ============================================================================
+  {
+    id: "net-tcpdump-read-pcap",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "tcpdump",
+    title: "Read and decode packets from an existing capture.pcap file with numeric output",
+    prompt: "A colleague captured traffic into `capture.pcap` during an outage. Read and print the packets from `capture.pcap` using `tcpdump` without resolving hostnames or port names.",
+    canonical: "tcpdump -nn -r capture.pcap",
+    accepted: ["tcpdump -nn -r capture.pcap", "tcpdump -r capture.pcap -nn", "tcpdump -n -r capture.pcap", "tcpdump -r capture.pcap"],
+    grammar: [
+      { token: "-r capture.pcap", desc: "Read packets from saved pcap file instead of a live interface" },
+      { token: "-nn", desc: "Do not resolve host IPs or port numbers" }
+    ],
+    sampleOutput: `reading from file capture.pcap, link-type EN10MB (Ethernet)
+18:25:01.402 IP 10.244.1.15.51244 > 10.244.2.80.80: Flags [S]`,
+    explanation: "`-w` writes raw packets to a file; `-r` reads them back and lets you apply BPF filters offline (e.g. `tcpdump -nn -r capture.pcap port 53`)."
+  },
+  {
+    id: "net-tcpdump-ascii",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "tcpdump",
+    title: "Capture HTTP traffic on eth0 port 80 and print packet payloads in ASCII",
+    prompt: "Capture traffic on `eth0` for `port 80` with numeric IPs/ports and print each packet's payload in ASCII so you can read raw HTTP headers on the wire.",
+    canonical: "tcpdump -i eth0 -nn -A port 80",
+    accepted: ["tcpdump -i eth0 -nn -A port 80", "tcpdump -i eth0 -nnA port 80", "tcpdump -nn -A -i eth0 port 80"],
+    grammar: [
+      { token: "-A", desc: "Print each packet (minus link header) in ASCII text" },
+      { token: "-nn", desc: "Numeric IPs and port numbers" }
+    ],
+    sampleOutput: `GET /healthz HTTP/1.1
+Host: 10.244.2.80:8080
+User-Agent: kube-probe/1.31`,
+    explanation: "`-A` prints ASCII text; use `-X` when you want a side-by-side hex + ASCII dump of binary protocols."
+  },
+  {
+    id: "net-ip-netns-list",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ip",
+    title: "List all named Linux network namespaces on the host",
+    prompt: "Display all named network namespaces registered under `/var/run/netns` using `ip`.",
+    canonical: "ip netns list",
+    accepted: ["ip netns list", "ip netns", "ip netns show"],
+    grammar: [
+      { token: "ip netns list", desc: "List all named network namespaces on the system" }
+    ],
+    sampleOutput: `cni-8a41b2c1-9012-4d1e (id: 2)
+cni-3f19e0a2-1184-4b2c (id: 1)`,
+    explanation: "CNI plugins create a separate network namespace per Kubernetes Pod."
+  },
+  {
+    id: "net-ip-netns-exec",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "ip",
+    title: "Execute ip addr inside named network namespace 'pod-ns'",
+    prompt: "Run `ip addr` inside the named Linux network namespace `pod-ns` using `ip netns exec`.",
+    canonical: "ip netns exec pod-ns ip addr",
+    accepted: ["ip netns exec pod-ns ip addr", "ip netns exec pod-ns ip a", "ip -n pod-ns addr"],
+    grammar: [
+      { token: "ip netns exec pod-ns", desc: "Switch into network namespace 'pod-ns' and run the following command" },
+      { token: "ip addr", desc: "Command executed inside 'pod-ns'" }
+    ],
+    sampleOutput: `1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536
+2: eth0@if19: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500
+    inet 10.244.1.48/32 scope global eth0`,
+    explanation: "Tip: `ip -n pod-ns addr` is a built-in shorthand for `ip netns exec pod-ns ip addr`."
+  },
+  {
+    id: "net-ss-summary",
+    session: "linux-net",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "ss",
+    title: "Print a summary count of total, TCP established, time-wait, and orphaned sockets",
+    prompt: "A load balancer is handling 50,000 connections. Print a high-level summary of socket counts by protocol and state (rather than listing 50,000 individual lines) using `ss`.",
+    canonical: "ss -s",
+    accepted: ["ss -s", "ss --summary"],
+    grammar: [
+      { token: "ss -s", desc: "Print summary statistics of all kernel sockets (Total, TCP estab, closed, orphaned, timewait)" }
+    ],
+    sampleOutput: `Total: 14820
+TCP:   12410 (estab 8910, closed 3200, orphaned 12, timewait 3180)`,
+    explanation: "On a node with tens of thousands of sockets, `ss -s` reads kernel summary counters instantaneously."
+  },
+  {
+    id: "net-ethtool-offload",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "ethtool",
+    title: "Inspect NIC hardware offload features (TSO, GSO, GRO, rx-checksumming) on eth0",
+    prompt: "Your Go `AF_PACKET` sniffer is seeing 64KB jumbo TCP segments on a 1500-MTU interface because Generic Receive Offload (GRO) is coalescing packets in the NIC driver. Inspect the offload feature flags of `eth0` using `ethtool`.",
+    canonical: "ethtool -k eth0",
+    accepted: ["ethtool -k eth0", "ethtool --show-features eth0"],
+    grammar: [
+      { token: "ethtool -k eth0", desc: "Show state of protocol offload and other NIC features (TSO, GSO, GRO, LRO, VLAN hw accel)" }
+    ],
+    sampleOutput: `tcp-segmentation-offload: on
+generic-segmentation-offload: on
+generic-receive-offload: on
+rx-vlan-offload: on`,
+    explanation: "When GRO/TSO is `on`, `tcpdump` and `AF_PACKET` sockets see super-sized merged frames (up to 64KB) before the NIC splits them on wire into 1500B MTU packets!"
+  },
+  {
+    id: "net-curl-resolve",
+    session: "linux-net",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "curl",
+    title: "Test an HTTPS endpoint against a specific backend IP (10.244.1.48) with TLS SNI",
+    prompt: "You want to test TLS certificate and HTTP routing on pod IP `10.244.1.48` port `443` for hostname `api.example.com` without changing `/etc/hosts` or DNS. Use `curl` with `--resolve`.",
+    canonical: "curl --resolve api.example.com:443:10.244.1.48 https://api.example.com",
+    accepted: [
+      "curl --resolve api.example.com:443:10.244.1.48 https://api.example.com",
+      "curl -v --resolve api.example.com:443:10.244.1.48 https://api.example.com"
+    ],
+    grammar: [
+      { token: "--resolve <host:port:ip>", desc: "Force curl to connect to <ip> while sending <host> in both TLS SNI and the HTTP Host header" }
+    ],
+    sampleOutput: `* Added api.example.com:443:10.244.1.48 to DNS cache
+* Connected to api.example.com (10.244.1.48) port 443`,
+    explanation: "Simply running `curl -H 'Host: api.example.com' https://10.244.1.48` fails TLS verification because TLS SNI uses the URL hostname, not the HTTP `Host` header. `--resolve` sets both!"
+  },
+  {
+    id: "proc-vmstat",
+    session: "linux-proc",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "vmstat",
+    title: "Sample virtual memory, swap, context switches, and CPU wait every 1 second",
+    prompt: "Run `vmstat` with a `1`-second sampling interval to watch runnable threads (`r`), blocked I/O threads (`b`), swap-in/out (`si`/`so`), and context switches (`cs`).",
+    canonical: "vmstat 1",
+    accepted: ["vmstat 1", "vmstat 1 5"],
+    grammar: [
+      { token: "vmstat 1", desc: "Report virtual memory, process, interrupt, and CPU statistics every 1 second" }
+    ],
+    sampleOutput: `procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st
+ 4  0      0 941200 124800 841200    0    0     0    42 4120 8910 18  6 76  0  0`,
+    explanation: "Non-zero `si`/`so` columns in `vmstat 1` prove the kernel is actively thrashing swap space right now."
+  },
+  {
+    id: "proc-cap-status",
+    session: "linux-proc",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "grep / proc",
+    title: "Check Linux capabilities (CapEff) of process 4102 in /proc",
+    prompt: "Your Go `AF_PACKET` sniffer (PID `4102`) failed with `operation not permitted`. Search `/proc/4102/status` for `Cap` using `grep` to inspect its effective Linux capability bitmask (`CapEff`).",
+    canonical: "grep Cap /proc/4102/status",
+    accepted: ["grep Cap /proc/4102/status", "grep -i cap /proc/4102/status"],
+    grammar: [
+      { token: "grep Cap /proc/4102/status", desc: "Print CapInh, CapPrm, CapEff, CapBnd, and CapAmb bitmasks for PID 4102" }
+    ],
+    sampleOutput: `CapInh:	0000000000000000
+CapPrm:	0000000000003000
+CapEff:	0000000000003000`,
+    explanation: "Bit `13` (`0x2000`) is `CAP_NET_RAW` (required for `AF_PACKET` and ICMP raw sockets) and bit `12` (`0x1000`) is `CAP_NET_ADMIN`—so `0000000000003000` confirms both capabilities are active! Decode any hex mask with `capsh --decode=0000000000003000`."
+  },
+  {
+    id: "sys-journalctl-prev-boot",
+    session: "systemd-logs",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "journalctl",
+    title: "Inspect systemd journal logs from the previous boot after a node crash",
+    prompt: "A bare-metal server rebooted unexpectedly overnight. Query `journalctl` for the logs from the **previous boot** (`-b -1`).",
+    canonical: "journalctl -b -1",
+    accepted: ["journalctl -b -1", "journalctl -b-1"],
+    grammar: [
+      { token: "journalctl -b -1", desc: "Show journal logs from the boot session immediately preceding the current boot (-1)" }
+    ],
+    sampleOutput: `Nov 02 03:14:09 node-1 kernel: Kernel panic - not syncing: Fatal exception in interrupt`,
+    explanation: "When persistent journal storage (`/var/log/journal`) is enabled, `journalctl -b -1` shows what happened right before the crash/reboot."
+  },
+  {
+    id: "sys-journalctl-vacuum",
+    session: "systemd-logs",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "journalctl",
+    title: "Shrink systemd journal disk usage down to 1 Gigabyte",
+    prompt: "`/var/log/journal` is consuming 8GB of disk space on a worker node. Use `journalctl` with `--vacuum-size` to trim archived journal files down to `1G`.",
+    canonical: "journalctl --vacuum-size=1G",
+    accepted: ["journalctl --vacuum-size=1G", "journalctl --vacuum-size 1G"],
+    grammar: [
+      { token: "journalctl --vacuum-size=1G", desc: "Remove oldest archived journal files until total journal size is under 1 GiB" }
+    ],
+    sampleOutput: `Vacuuming done, freed 6.8G of archived journals from /var/log/journal.`,
+    explanation: "Safe way to reclaim gigabytes of `/var/log/journal` space during a node `DiskPressure` incident without corrupting active journal files."
+  },
+  {
+    id: "k8s-logs-container",
+    session: "kubectl",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "kubectl",
+    title: "Fetch logs from a specific sidecar container ('envoy') inside a multi-container Pod",
+    prompt: "Pod `payment-api` contains two containers: `app` and `envoy`. Fetch the logs specifically for the `envoy` container.",
+    canonical: "kubectl logs payment-api -c envoy",
+    accepted: ["kubectl logs payment-api -c envoy", "kubectl logs -c envoy payment-api"],
+    grammar: [
+      { token: "-c envoy", desc: "Select container 'envoy' inside a multi-container pod" }
+    ],
+    sampleOutput: `[2026-11-02 22:20:01.104][18][info][main]lds: add/update listener '0.0.0.0_8080'`,
+    explanation: "Works with `kubectl exec -it payment-api -c envoy -- sh` as well."
+  },
+  {
+    id: "k8s-auth-can-i",
+    session: "kubectl",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "kubectl",
+    title: "Verify RBAC permissions using kubectl auth can-i",
+    prompt: "A CI pipeline or ServiceAccount is getting `403 Forbidden`. Use `kubectl auth can-i` to check whether your current identity is allowed to `create deployments`.",
+    canonical: "kubectl auth can-i create deployments",
+    accepted: ["kubectl auth can-i create deployments", "kubectl auth can-i create deployment", "kubectl auth can-i create deploy"],
+    grammar: [
+      { token: "kubectl auth can-i <verb> <resource>", desc: "Query Kubernetes SubjectAccessReview API to test RBAC permissions" }
+    ],
+    sampleOutput: `yes`,
+    explanation: "Add `--as=system:serviceaccount:default:my-sa` to test RBAC permissions of a specific Pod's ServiceAccount!"
+  },
+  {
+    id: "k8s-get-netpol",
+    session: "kubectl",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "kubectl",
+    title: "List all NetworkPolicies across all namespaces",
+    prompt: "List all Kubernetes `NetworkPolicy` (`netpol`) resources across all namespaces.",
+    canonical: "kubectl get netpol -A",
+    accepted: [
+      "kubectl get netpol -A",
+      "kubectl get networkpolicies -A",
+      "kubectl get networkpolicy -A"
+    ],
+    grammar: [
+      { token: "kubectl get netpol -A", desc: "List NetworkPolicy resources across all namespaces" }
+    ],
+    sampleOutput: `NAMESPACE   NAME                 POD-SELECTOR     AGE
+default     deny-egress-all      app=checkout     2h`,
+    explanation: "In Cilium clusters, also check `kubectl get cnp,ccnp -A` for `CiliumNetworkPolicy` and `CiliumClusterwideNetworkPolicy` CRDs!"
+  },
+  {
+    id: "k8s-jsonpath-ips",
+    session: "kubectl",
+    level: 3,
+    difficulty: "Level 3 · Deep Diagnostics",
+    tool: "kubectl",
+    title: "Extract InternalIP of all cluster nodes using JSONPath",
+    prompt: "Get nodes using `kubectl` and extract `.items[*].status.addresses[0].address` via `-o jsonpath`.",
+    canonical: "kubectl get nodes -o jsonpath='{.items[*].status.addresses[0].address}'",
+    accepted: [
+      "kubectl get nodes -o jsonpath='{.items[*].status.addresses[0].address}'",
+      "kubectl get no -o jsonpath='{.items[*].status.addresses[0].address}'"
+    ],
+    grammar: [
+      { token: "-o jsonpath='{...}'", desc: "Extract specific fields from Kubernetes API JSON responses" }
+    ],
+    sampleOutput: `172.18.0.2 172.18.0.3 172.18.0.4`,
+    explanation: "JSONPath extraction is heavily tested in CKA/CKS and SRE scripting interviews."
+  },
+  {
+    id: "hc-cilium-endpoint-list",
+    session: "helm-cilium",
+    level: 2,
+    difficulty: "Level 2 · Filtering & Flags",
+    tool: "cilium",
+    title: "List all Cilium endpoints, security identities, and policy enforcement states on a node",
+    prompt: "Inside a Cilium agent pod, list all managed local endpoints (`endpoint list`) to see their security identity IDs, IPv4 addresses, and ingress/egress policy enforcement status.",
+    canonical: "cilium endpoint list",
+    accepted: ["cilium endpoint list", "cilium-dbg endpoint list"],
+    grammar: [
+      { token: "cilium endpoint list", desc: "List local Cilium endpoints, security identities, and policy status (Enabled/Disabled)" }
+    ],
+    sampleOutput: `ENDPOINT   POLICY (ingress)   POLICY (egress)   IDENTITY   LABELS (source:key[=value])   IPv4          STATUS
+1042       Enabled            Enabled           41892      k8s:app=checkout              10.244.1.15   ready`,
+    explanation: "Cilium enforces network policy using numeric **Security Identities** (`IDENTITY 41892`) derived from Pod labels rather than brittle IP addresses."
+  },
+  {
+    id: "chain-l2-sniffer-debug",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "ip -> tcpdump -> ethtool",
+    title: "Incident Chain: Go AF_PACKET Sniffer Missing VLAN & Jumbo Frames",
+    explanation: "When building or debugging a Layer 2 packet sniffer on Linux, verify interface state (`ip link`), enable promiscuous mode (`ip link set eth0 promisc on`), and inspect L2 VLAN headers (`tcpdump -i eth0 -nn -e`).",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Your Go `AF_PACKET` sniffer on `eth0` only sees broadcast and host-destined frames, missing other traffic on the mirror port. First, enable promiscuous mode (`promisc on`) on `eth0` using `ip link set`.",
+        canonical: "ip link set eth0 promisc on",
+        accepted: ["ip link set eth0 promisc on", "ip link set dev eth0 promisc on"],
+        output: `(eth0 flags updated: <BROADCAST,MULTICAST,PROMISC,UP,LOWER_UP>)`
+      },
+      {
+        prompt: "STEP 2 of 3: Now verify whether incoming frames on `eth0` carry 802.1Q VLAN tags by running `tcpdump` on `eth0` with numeric output and Layer 2 link-level Ethernet headers enabled.",
+        canonical: "tcpdump -i eth0 -nn -e",
+        accepted: ["tcpdump -i eth0 -nn -e", "tcpdump -i eth0 -nne", "tcpdump -nne -i eth0"],
+        output: `22:40:01.104 00:1b:54:c2:10:01 > 52:54:00:6b:3c:11, ethertype 802.1Q (0x8100), vlan 200, ethertype IPv4`
+      },
+      {
+        prompt: "STEP 3 of 3: You also notice your sniffer receives 64KB coalesced TCP packets on a 1500-MTU link! Inspect the NIC hardware offload flags (GRO/TSO/rx-vlan-offload) on `eth0` using `ethtool`.",
+        canonical: "ethtool -k eth0",
+        accepted: ["ethtool -k eth0", "ethtool --show-features eth0"],
+        output: `generic-receive-offload: on
+tcp-segmentation-offload: on
+rx-vlan-offload: on (Confirmed: GRO is merging packets and rx-vlan-offload strips 802.1Q tags into skb metadata ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: ip link set eth0 promisc on", desc: "Disable NIC hardware MAC filter so all L2 frames reach AF_PACKET" },
+      { token: "Step 2: tcpdump -i eth0 -nn -e", desc: "Inspect L2 MACs and 802.1Q EtherType (0x8100)" },
+      { token: "Step 3: ethtool -k eth0", desc: "Verify GRO/GSO/TSO and hardware VLAN offload state" }
+    ]
   }
 ];
+

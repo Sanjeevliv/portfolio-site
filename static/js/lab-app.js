@@ -1,23 +1,28 @@
-// Clean Single-Card Random CLI Drill Engine
-// Features: Spaced Repetition, Symptom Output, Multi-Step Incident Chains, and Visual Token Diff
+// Incremental Learn -> Test CLI Mastery Engine
+// Stage 0 (Learn): Teaches the command & grammar first; user types it once to practice.
+// Stage 1 (Test): Re-queues 2-4 turns later with NO tool spoiler and NO study card; user recalls from memory.
+// Stage 2 (Mastered): Passed cold in Test mode; unlocks higher Incremental Levels (L1 -> L2 -> L3 -> L4).
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "sre_lab_smart_v3";
+  const STORAGE_KEY = "sre_lab_incremental_v4";
 
   const state = {
     session: "all",
+    levelFilter: "auto", // "auto" | "1" | "2" | "3" | "4"
+    modeFilter: "adaptive", // "adaptive" (Learn -> Test) | "test" | "learn"
     currentQuestion: null,
-    stepIndex: 0, // For multi-step incident chains
-    stepHistory: [], // Completed steps in current chain: [{ cmd, output }]
-    usedHelpOnCurrent: false,
+    currentPhase: "learn", // "learn" | "test"
+    stepIndex: 0,
+    stepHistory: [],
+    revealedSolutionOnCurrent: false,
     turnCounter: 0,
-    solvedCount: 0,
     streak: 0,
-    memory: {}, // { [id]: { box: 1(weak)|2(learning)|3(mastered), lastTurn: number } }
+    // memory[id] = { stage: 0(learn) | 1(ready_for_test) | 2(mastered), lastTurn: number, failedTest: boolean }
+    memory: {},
     cmdHistory: [],
     cmdHistoryIdx: -1,
-    feedback: null, // { status, userCmd, message, showHint, revealed, diffHtml }
+    feedback: null,
   };
 
   function loadStats() {
@@ -26,7 +31,6 @@
       if (!raw) return;
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
-        state.solvedCount = Number(parsed.solvedCount) || 0;
         state.streak = Number(parsed.streak) || 0;
         state.turnCounter = Number(parsed.turnCounter) || 0;
         state.memory = parsed.memory || {};
@@ -39,7 +43,6 @@
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({
-          solvedCount: state.solvedCount,
           streak: state.streak,
           turnCounter: state.turnCounter,
           memory: state.memory,
@@ -173,7 +176,6 @@
     );
   }
 
-  // Build a clean visual token diff comparing user tokens against canonical tokens
   function buildTokenDiffHtml(rawUserCmd, canonicalCmd) {
     const cleanedUser = rawUserCmd
       .trim()
@@ -208,7 +210,11 @@
       <div class="lab-diff-bar mt-2">
         <span class="text-secondary small me-2">Diff:</span>
         ${userParts.join(" ")}
-        ${missingParts.length ? `<span class="ms-2">${missingParts.join(" ")}</span>` : ""}
+        ${
+          missingParts.length
+            ? `<span class="ms-2">${missingParts.join(" ")}</span>`
+            : ""
+        }
       </div>
     `;
   }
@@ -242,7 +248,10 @@
         return {
           status: "correct",
           userCmd: trimmed,
-          message: "Correct!",
+          message:
+            state.currentPhase === "learn"
+              ? "Practiced! We'll test your recall on this command shortly."
+              : "Mastered! You recalled this command without spoilers.",
         };
       }
     }
@@ -251,82 +260,169 @@
       status: "incorrect",
       userCmd: trimmed,
       diffHtml: buildTokenDiffHtml(trimmed, target.canonical),
-      message: "Not quite — compare your command with the solution below.",
+      message: "Compare your command tokens against the solution below.",
     };
   }
 
-  function getPool() {
+  function getTopicPool() {
     const all = window.SRE_LAB_QUESTIONS || [];
     if (state.session === "all") return all;
     return all.filter((q) => q.session === state.session);
   }
 
-  // Spaced Repetition Picker:
-  // Prioritizes due Weak Spots (box === 1), then Unseen (no box), then Learning (box === 2), then Mastered (box === 3)
-  function pickNextRandomQuestion() {
-    const pool = getPool();
-    if (pool.length === 0) {
+  // Compute the current unlocked incremental level (1..4) based on progress in the active topic pool
+  function getUnlockedLevel(topicPool) {
+    for (let lvl = 1; lvl <= 3; lvl++) {
+      const inLevel = topicPool.filter((q) => (q.level || 1) === lvl);
+      if (inLevel.length === 0) continue;
+      // Unlock the next level once at least 50% (or at least 4) of the current level have been practiced/mastered
+      const progressed = inLevel.filter(
+        (q) => state.memory[q.id] && state.memory[q.id].stage >= 1
+      ).length;
+      const threshold = Math.min(4, Math.ceil(inLevel.length * 0.5));
+      if (progressed < threshold) {
+        return lvl;
+      }
+    }
+    return 4;
+  }
+
+  function pickNextQuestion() {
+    const topicPool = getTopicPool();
+    if (topicPool.length === 0) {
       state.currentQuestion = null;
       return;
     }
 
     state.turnCounter += 1;
-    const prevId = state.currentQuestion ? state.currentQuestion.id : null;
-    const candidates = pool.length > 1 ? pool.filter((q) => q.id !== prevId) : pool;
+    const unlockedLevel = getUnlockedLevel(topicPool);
 
-    const dueWeak = [];
-    const unseen = [];
-    const learning = [];
+    let levelPool = topicPool;
+    if (state.levelFilter !== "auto") {
+      const targetLvl = Number(state.levelFilter);
+      const exact = topicPool.filter((q) => (q.level || 1) === targetLvl);
+      if (exact.length > 0) levelPool = exact;
+    } else {
+      const allowed = topicPool.filter(
+        (q) => (q.level || 1) <= unlockedLevel
+      );
+      if (allowed.length > 0) levelPool = allowed;
+    }
+
+    const prevId = state.currentQuestion ? state.currentQuestion.id : null;
+    const candidates =
+      levelPool.length > 1
+        ? levelPool.filter((q) => q.id !== prevId)
+        : levelPool;
+
+    // Bucket candidates by Learn -> Test lifecycle:
+    // 1. dueForTest: stage === 1 (learned, waiting to be tested cold after >= 2 turns)
+    // 2. failedRetry: stage === 0 && failedTest (missed in Test mode, needs Learn reinforcement)
+    // 3. unseenLearn: no memory entry yet (needs initial Learn phase)
+    // 4. mastered: stage === 2
+    const dueForTest = [];
+    const failedRetry = [];
+    const unseenLearn = [];
+    const waitingCooldown = [];
     const mastered = [];
 
     for (const q of candidates) {
       const mem = state.memory[q.id];
       if (!mem) {
-        unseen.push(q);
-      } else if (mem.box === 1 && state.turnCounter - mem.lastTurn >= 3) {
-        dueWeak.push(q);
-      } else if (mem.box <= 2) {
-        learning.push(q);
+        unseenLearn.push(q);
+      } else if (mem.stage === 0) {
+        failedRetry.push(q);
+      } else if (mem.stage === 1) {
+        if (state.turnCounter - mem.lastTurn >= 2) {
+          dueForTest.push(q);
+        } else {
+          waitingCooldown.push(q);
+        }
       } else {
         mastered.push(q);
       }
     }
 
-    let bucket = candidates;
-    const roll = Math.random();
-    if (dueWeak.length > 0 && roll < 0.65) {
-      bucket = dueWeak;
-    } else if (unseen.length > 0 && roll < 0.85) {
-      bucket = unseen;
-    } else if (learning.length > 0) {
-      bucket = learning;
-    } else if (unseen.length > 0) {
-      bucket = unseen;
-    } else if (mastered.length > 0) {
-      bucket = mastered;
+    let chosen = null;
+    let phase = "learn";
+
+    if (state.modeFilter === "test") {
+      const nonMastered = [...dueForTest, ...failedRetry, ...unseenLearn, ...waitingCooldown];
+      const pool = nonMastered.length > 0 ? nonMastered : candidates;
+      chosen = pool[Math.floor(Math.random() * pool.length)];
+      phase = "test";
+    } else if (state.modeFilter === "learn") {
+      const unlearned = [...failedRetry, ...unseenLearn];
+      const pool = unlearned.length > 0 ? unlearned : candidates;
+      chosen = pool[Math.floor(Math.random() * pool.length)];
+      phase = "learn";
+    } else {
+      // Adaptive Learn -> Test mode:
+      // Alternate naturally between testing recently learned commands and introducing new ones!
+      if (dueForTest.length > 0 && (Math.random() < 0.65 || (unseenLearn.length === 0 && failedRetry.length === 0))) {
+        chosen = dueForTest[Math.floor(Math.random() * dueForTest.length)];
+        phase = "test";
+      } else if (failedRetry.length > 0 && Math.random() < 0.7) {
+        chosen = failedRetry[Math.floor(Math.random() * failedRetry.length)];
+        phase = "learn";
+      } else if (unseenLearn.length > 0) {
+        // Pick from the lowest uncompleted incremental level first so learning is genuinely incremental!
+        unseenLearn.sort((a, b) => (a.level || 1) - (b.level || 1));
+        const minLevel = unseenLearn[0].level || 1;
+        const lowestTier = unseenLearn.filter((q) => (q.level || 1) === minLevel);
+        chosen = lowestTier[Math.floor(Math.random() * lowestTier.length)];
+        phase = "learn";
+      } else if (waitingCooldown.length > 0) {
+        chosen = waitingCooldown[Math.floor(Math.random() * waitingCooldown.length)];
+        phase = "test";
+      } else {
+        chosen = candidates[Math.floor(Math.random() * candidates.length)];
+        phase = "test";
+      }
     }
 
-    const chosen = bucket[Math.floor(Math.random() * bucket.length)];
     state.currentQuestion = chosen;
+    state.currentPhase = phase;
     state.stepIndex = 0;
     state.stepHistory = [];
-    state.usedHelpOnCurrent = false;
+    state.revealedSolutionOnCurrent = false;
     state.feedback = null;
   }
 
-  function updateSpacedMemory(questionId, wasCleanSuccess) {
-    const prev = state.memory[questionId] || { box: 0, lastTurn: 0 };
-    let nextBox = prev.box;
-    if (wasCleanSuccess && !state.usedHelpOnCurrent) {
-      nextBox = prev.box === 0 ? 2 : Math.min(3, prev.box + 1);
-    } else {
-      nextBox = 1; // Tag as Weak Spot so it comes back after 3+ questions
-      state.usedHelpOnCurrent = true;
-    }
-    state.memory[questionId] = {
-      box: nextBox,
-      lastTurn: state.turnCounter,
+  function recordOutcome(questionId, isSuccess) {
+    const prev = state.memory[questionId] || {
+      stage: 0,
+      lastTurn: 0,
+      failedTest: false,
     };
+
+    if (state.currentPhase === "learn") {
+      if (isSuccess) {
+        // Graduated from Learn (0) -> Ready for Test (1)
+        state.memory[questionId] = {
+          stage: Math.max(1, prev.stage),
+          lastTurn: state.turnCounter,
+          failedTest: false,
+        };
+      }
+      return;
+    }
+
+    // In Test mode:
+    if (isSuccess && !state.revealedSolutionOnCurrent) {
+      state.memory[questionId] = {
+        stage: 2, // Mastered!
+        lastTurn: state.turnCounter,
+        failedTest: false,
+      };
+    } else {
+      // Missed in Test mode -> drop back to Stage 0 (Learn) so it gets re-taught and re-tested!
+      state.memory[questionId] = {
+        stage: 0,
+        lastTurn: state.turnCounter,
+        failedTest: true,
+      };
+    }
   }
 
   function getSessionTitle(sessionId) {
@@ -336,10 +432,61 @@
   }
 
   function renderHeaderStats() {
+    const topicPool = getTopicPool();
+    const masteredCount = topicPool.filter(
+      (q) => state.memory[q.id] && state.memory[q.id].stage === 2
+    ).length;
+    const unlockedLvl = getUnlockedLevel(topicPool);
+
+    const levelEl = document.getElementById("lab-stat-level");
     const solvedEl = document.getElementById("lab-stat-solved");
     const streakEl = document.getElementById("lab-stat-streak");
-    if (solvedEl) solvedEl.textContent = String(state.solvedCount);
-    if (streakEl) streakEl.textContent = `${state.streak} 🔥`;
+
+    if (levelEl) {
+      levelEl.textContent =
+        state.levelFilter === "auto"
+          ? `L${unlockedLvl}`
+          : `L${state.levelFilter}`;
+    }
+    if (solvedEl) {
+      solvedEl.textContent = `${masteredCount}/${topicPool.length}`;
+    }
+    if (streakEl) {
+      streakEl.textContent = `${state.streak} 🔥`;
+    }
+  }
+
+  function renderLearnStudyBox(q, target) {
+    const grammarRows = (q.grammar || [])
+      .map(
+        (g) => `
+        <div class="lab-grammar-item">
+          <code class="lab-grammar-token">${escapeHtml(g.token)}</code>
+          <span class="lab-grammar-desc">${escapeHtml(g.desc)}</span>
+        </div>
+      `
+      )
+      .join("");
+
+    return `
+      <div class="lab-study-box mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div>
+            <span class="lab-study-label"><i class="fas fa-book-open me-1"></i>Learn Command</span>
+            <code class="lab-canonical-code">${escapeHtml(
+              target.canonical
+            )}</code>
+          </div>
+          <span class="small text-secondary">Type this command below to practice it</span>
+        </div>
+        <div class="lab-grammar-list">${grammarRows}</div>
+        <div class="small text-secondary mt-2">
+          <strong class="text-body">Why:</strong> ${formatInlineCode(
+            q.explanation
+          )}
+        </div>
+      </div>
+    `;
   }
 
   function renderFeedback(q, fb) {
@@ -347,13 +494,14 @@
 
     const target = getActiveTarget(q);
     const isEvaluated = fb.status === "correct" || fb.status === "incorrect";
-    const showSolution = isEvaluated || fb.revealed;
+    const showSolution =
+      state.currentPhase === "test" && (isEvaluated || fb.revealed);
     const isMultiStep = Boolean(q.steps && q.steps.length > 0);
     const isLastStep = !isMultiStep || state.stepIndex >= q.steps.length - 1;
 
     let banner = "";
     if (fb.status === "correct") {
-      const btnLabel = isLastStep ? "Next Question" : "Next Step";
+      const btnLabel = isLastStep ? "Continue" : "Next Step";
       banner = `
         <div class="lab-feedback-banner lab-feedback-banner--correct d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div>
@@ -371,10 +519,10 @@
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div>
               <i class="fas fa-circle-xmark me-2"></i>
-              <strong>Incorrect.</strong> ${formatInlineCode(fb.message)}
+              <strong>Not quite.</strong> ${formatInlineCode(fb.message)}
             </div>
             <button type="button" class="btn btn-sm btn-primary fw-semibold" id="lab-next-inline-btn">
-              Skip / Next <kbd class="ms-1">↵</kbd>
+              Next <kbd class="ms-1">↵</kbd>
             </button>
           </div>
           ${fb.diffHtml || ""}
@@ -388,17 +536,23 @@
       `;
     }
 
-    const hintHtml = fb.showHint
-      ? `
-        <div class="lab-hint-box mt-2">
-          <i class="fas fa-lightbulb me-2 text-warning"></i>
-          <strong>Hint:</strong> ${formatInlineCode(target.hint)}
-        </div>
-      `
-      : "";
+    // In Learn mode, the Study Box is already visible above the terminal—just show the simulated output on success!
+    if (state.currentPhase === "learn") {
+      const outputPreview = target.output || q.sampleOutput || "";
+      return `
+        ${banner}
+        ${
+          fb.status === "correct" && outputPreview
+            ? `<pre class="lab-sample-output mt-2 mb-0"><code>${escapeHtml(
+                outputPreview
+              )}</code></pre>`
+            : ""
+        }
+      `;
+    }
 
     if (!showSolution) {
-      return banner + hintHtml;
+      return banner;
     }
 
     const grammarRows = (q.grammar || [])
@@ -422,7 +576,6 @@
 
     return `
       ${banner}
-      ${hintHtml}
       <div class="lab-solution-panel mt-3">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
           <div>
@@ -431,11 +584,16 @@
               target.canonical
             )}</code>
           </div>
-          ${
-            altList
-              ? `<div class="small"><span class="text-secondary me-1">Aliases:</span>${altList}</div>`
-              : ""
-          }
+          <div class="d-flex align-items-center gap-2">
+            <span class="lab-badge lab-badge-tool"><i class="fas fa-terminal me-1"></i>${escapeHtml(
+              q.tool
+            )}</span>
+            ${
+              altList
+                ? `<span class="small text-secondary">Aliases: ${altList}</span>`
+                : ""
+            }
+          </div>
         </div>
 
         ${
@@ -467,27 +625,42 @@
 
     const target = getActiveTarget(q);
     const isMultiStep = Boolean(q.steps && q.steps.length > 0);
+    const isLearnPhase = state.currentPhase === "learn";
     const mem = state.memory[q.id];
-    const isWeakSpot = mem && mem.box === 1;
 
-    const diffClass =
-      q.difficulty === "Core"
-        ? "lab-badge-core"
-        : q.difficulty === "Intermediate"
-        ? "lab-badge-inter"
-        : "lab-badge-war";
+    const phaseBadge = isLearnPhase
+      ? `<span class="lab-badge lab-badge-learn"><i class="fas fa-graduation-cap me-1"></i>Learn Phase</span>`
+      : `<span class="lab-badge lab-badge-test"><i class="fas fa-bolt me-1"></i>Test Recall (No Spoilers)</span>`;
+
+    const levelBadge = `<span class="lab-badge lab-badge-session">${escapeHtml(
+      q.difficulty || "Level " + (q.level || 1)
+    )}</span>`;
+
+    // Only show the tool badge during Learn phase—hide it during Test phase so it never spoils the answer!
+    const toolBadge = isLearnPhase
+      ? `<span class="lab-badge lab-badge-tool"><i class="fas fa-terminal me-1"></i>${escapeHtml(
+          q.tool
+        )}</span>`
+      : "";
+
+    const retryBadge =
+      mem && mem.failedTest
+        ? `<span class="lab-badge lab-badge-weak">Reviewing Missed Command 🔁</span>`
+        : "";
 
     const symptomHtml =
       !isMultiStep && q.symptomOutput
         ? `
         <div class="lab-symptom-box mb-3">
-          <div class="lab-symptom-label">Observed Terminal Symptom</div>
+          <div class="lab-symptom-label">Observed Terminal Output</div>
           <pre class="lab-sample-output mb-0"><code>${escapeHtml(
             q.symptomOutput
           )}</code></pre>
         </div>
       `
         : "";
+
+    const studyHtml = isLearnPhase ? renderLearnStudyBox(q, target) : "";
 
     const stepHistoryHtml =
       isMultiStep && state.stepHistory.length > 0
@@ -515,12 +688,9 @@
       <div class="lab-question-card">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div class="d-flex align-items-center flex-wrap gap-2">
-            <span class="lab-badge ${diffClass}">${escapeHtml(
-              q.difficulty
-            )}</span>
-            <span class="lab-badge lab-badge-tool"><i class="fas fa-terminal me-1"></i>${escapeHtml(
-              q.tool
-            )}</span>
+            ${phaseBadge}
+            ${levelBadge}
+            ${toolBadge}
             <span class="lab-badge lab-badge-session">${escapeHtml(
               getSessionTitle(q.session)
             )}</span>
@@ -531,20 +701,17 @@
                   } / ${q.steps.length}</span>`
                 : ""
             }
-            ${
-              isWeakSpot
-                ? `<span class="lab-badge lab-badge-weak" title="Re-queued for spaced repetition practice">Weak Spot 🔁</span>`
-                : ""
-            }
+            ${retryBadge}
           </div>
-          <button type="button" class="btn btn-sm lab-btn-ghost" id="lab-skip-btn" title="Skip to another random question">
-            Next Random →
+          <button type="button" class="btn btn-sm lab-btn-ghost" id="lab-skip-btn">
+            Skip →
           </button>
         </div>
 
         <h2 class="lab-q-title mb-2">${escapeHtml(q.title)}</h2>
         ${symptomHtml}
         <p class="lab-q-prompt mb-3">${formatInlineCode(target.prompt)}</p>
+        ${studyHtml}
 
         <form id="lab-command-form" autocomplete="off" spellcheck="false">
           <div class="lab-terminal-box">
@@ -561,7 +728,11 @@
                 id="lab-cmd-input"
                 type="text"
                 class="lab-terminal-input"
-                placeholder="Type command and press Enter..."
+                placeholder="${
+                  isLearnPhase
+                    ? "Type the command above and press Enter to practice..."
+                    : "Recall and type the command, then press Enter..."
+                }"
                 autocomplete="off"
                 autocorrect="off"
                 autocapitalize="off"
@@ -574,13 +745,14 @@
           </div>
 
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-2">
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-sm lab-btn-ghost" id="lab-hint-btn">
-                <i class="far fa-lightbulb me-1"></i>Hint
-              </button>
-              <button type="button" class="btn btn-sm lab-btn-ghost" id="lab-reveal-btn">
-                <i class="fas fa-eye me-1"></i>Solution
-              </button>
+            <div>
+              ${
+                !isLearnPhase
+                  ? `<button type="button" class="btn btn-sm lab-btn-ghost" id="lab-reveal-btn">
+                      <i class="fas fa-eye me-1"></i>Show Solution
+                    </button>`
+                  : `<span class="small text-secondary">After practicing this once, we'll test you without spoilers.</span>`
+              }
             </div>
             <span class="small text-secondary" id="lab-enter-tip">Press <kbd>Enter</kbd> to verify</span>
           </div>
@@ -593,7 +765,6 @@
     const form = document.getElementById("lab-command-form");
     const input = document.getElementById("lab-cmd-input");
     const skipBtn = document.getElementById("lab-skip-btn");
-    const hintBtn = document.getElementById("lab-hint-btn");
     const revealBtn = document.getElementById("lab-reveal-btn");
 
     if (input) {
@@ -629,7 +800,6 @@
         e.preventDefault();
         const prev = state.feedback;
 
-        // If already evaluated and user presses Enter again without editing, advance!
         if (
           prev &&
           (prev.status === "correct" || prev.status === "incorrect") &&
@@ -650,22 +820,20 @@
           const isFinalStep =
             !q.steps || state.stepIndex >= q.steps.length - 1;
           if (isFinalStep) {
-            state.solvedCount += 1;
             state.streak += 1;
-            updateSpacedMemory(q.id, true);
+            recordOutcome(q.id, true);
           }
           saveStats();
           renderHeaderStats();
         } else if (result.status === "incorrect") {
           state.streak = 0;
-          updateSpacedMemory(q.id, false);
+          recordOutcome(q.id, false);
           saveStats();
           renderHeaderStats();
         }
 
         state.feedback = {
           ...result,
-          showHint: prev ? prev.showHint : false,
           revealed: result.status !== "empty",
         };
 
@@ -675,31 +843,16 @@
 
     if (skipBtn) {
       skipBtn.addEventListener("click", () => {
-        pickNextRandomQuestion();
+        pickNextQuestion();
+        renderHeaderStats();
         renderCard();
-      });
-    }
-
-    if (hintBtn) {
-      hintBtn.addEventListener("click", () => {
-        state.usedHelpOnCurrent = true;
-        const prev = state.feedback || {};
-        state.feedback = {
-          ...prev,
-          showHint: !prev.showHint,
-        };
-        hintBtn.innerHTML = `<i class="far fa-lightbulb me-1"></i>${
-          state.feedback.showHint ? "Hide Hint" : "Hint"
-        }`;
-        updateFeedbackSlot();
-        if (input) input.focus();
       });
     }
 
     if (revealBtn) {
       revealBtn.addEventListener("click", () => {
-        state.usedHelpOnCurrent = true;
-        updateSpacedMemory(q.id, false);
+        state.revealedSolutionOnCurrent = true;
+        recordOutcome(q.id, false);
         saveStats();
         const prev = state.feedback || {};
         state.feedback = {
@@ -707,7 +860,7 @@
           revealed: !prev.revealed,
         };
         revealBtn.innerHTML = `<i class="fas fa-eye me-1"></i>${
-          state.feedback.revealed ? "Hide Solution" : "Solution"
+          state.feedback.revealed ? "Hide Solution" : "Show Solution"
         }`;
         updateFeedbackSlot();
         if (input) input.focus();
@@ -735,7 +888,8 @@
       return;
     }
 
-    pickNextRandomQuestion();
+    pickNextQuestion();
+    renderHeaderStats();
     renderCard();
   }
 
@@ -767,31 +921,54 @@
     }
   }
 
-  function initTopicDropdown() {
-    const select = document.getElementById("lab-topic-select");
-    if (!select) return;
+  function initDropdowns() {
+    const topicSelect = document.getElementById("lab-topic-select");
+    if (topicSelect) {
+      const sessions = window.SRE_LAB_SESSIONS || [];
+      topicSelect.innerHTML = sessions
+        .map(
+          (s) =>
+            `<option value="${escapeHtml(s.id)}">${escapeHtml(
+              s.title
+            )}</option>`
+        )
+        .join("");
 
-    const sessions = window.SRE_LAB_SESSIONS || [];
-    select.innerHTML = sessions
-      .map(
-        (s) =>
-          `<option value="${escapeHtml(s.id)}">${escapeHtml(s.title)}</option>`
-      )
-      .join("");
+      topicSelect.addEventListener("change", () => {
+        state.session = topicSelect.value || "all";
+        pickNextQuestion();
+        renderHeaderStats();
+        renderCard();
+      });
+    }
 
-    select.addEventListener("change", () => {
-      state.session = select.value || "all";
-      pickNextRandomQuestion();
-      renderCard();
-    });
+    const levelSelect = document.getElementById("lab-level-select");
+    if (levelSelect) {
+      levelSelect.addEventListener("change", () => {
+        state.levelFilter = levelSelect.value || "auto";
+        pickNextQuestion();
+        renderHeaderStats();
+        renderCard();
+      });
+    }
+
+    const modeSelect = document.getElementById("lab-mode-select");
+    if (modeSelect) {
+      modeSelect.addEventListener("change", () => {
+        state.modeFilter = modeSelect.value || "adaptive";
+        pickNextQuestion();
+        renderHeaderStats();
+        renderCard();
+      });
+    }
   }
 
   function init() {
     if (!document.getElementById("sre-cli-lab-root")) return;
     loadStats();
-    initTopicDropdown();
+    initDropdowns();
+    pickNextQuestion();
     renderHeaderStats();
-    pickNextRandomQuestion();
     renderCard();
   }
 
