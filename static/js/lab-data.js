@@ -2471,6 +2471,294 @@ rx-vlan-offload: on (Confirmed: GRO is merging packets and rx-vlan-offload strip
       { token: "Step 2: tcpdump -i eth0 -nn -e", desc: "Inspect L2 MACs and 802.1Q EtherType (0x8100)" },
       { token: "Step 3: ethtool -k eth0", desc: "Verify GRO/GSO/TSO and hardware VLAN offload state" }
     ]
+  },
+  {
+    id: "chain-k8s-crashloop-oom",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "kubectl (get -> describe -> logs -p)",
+    title: "Incident Chain: Kubernetes Pod CrashLoopBackOff & OOMKill Triage",
+    explanation: "Standard 3-step Kubernetes pod triage: locate the failing pod and node (`get pods -A -o wide`), check `Last State: OOMKilled / Exit Code 137` and Events (`describe pod`), and pull crash logs from the previous instance (`logs --previous`).",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: An alert fired for a crashing pod in the cluster. List all pods across all namespaces with extended columns (Pod IP and Node).",
+        canonical: "kubectl get pods -A -o wide",
+        accepted: ["kubectl get pods -A -o wide", "kubectl get po -A -o wide"],
+        output: `NAMESPACE   NAME           READY   STATUS             RESTARTS      IP            NODE
+default     payment-api    0/1     CrashLoopBackOff   5 (18s ago)   10.244.1.48   kind-worker`
+      },
+      {
+        prompt: "STEP 2 of 3: Pod `payment-api` is in `CrashLoopBackOff`. Inspect its detailed state, last termination reason/exit code, and kubelet Events.",
+        canonical: "kubectl describe pod payment-api",
+        accepted: ["kubectl describe pod payment-api", "kubectl describe po payment-api"],
+        output: `Last State:     Terminated
+  Reason:       OOMKilled
+  Exit Code:    137`
+      },
+      {
+        prompt: "STEP 3 of 3: Before increasing memory limits, fetch the logs from the **previous** terminated container instance of `payment-api` to see what it was doing right before the crash.",
+        canonical: "kubectl logs payment-api --previous",
+        accepted: ["kubectl logs payment-api --previous", "kubectl logs -p payment-api", "kubectl logs payment-api -p"],
+        output: `2026-11-02T22:50:11Z WARN loading 12GB uncompressed GeoIP table into memory... (Killed ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: kubectl get pods -A -o wide", desc: "Locate crashing pod, IP, and node" },
+      { token: "Step 2: kubectl describe pod payment-api", desc: "Check Last State (OOMKilled / 137) and Events" },
+      { token: "Step 3: kubectl logs payment-api --previous", desc: "Inspect stdout/stderr from the previous crashed container" }
+    ]
+  },
+  {
+    id: "chain-coredns-outage",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "dig -> kubectl -> hubble",
+    title: "Incident Chain: Kubernetes Service DNS Resolution Outage",
+    explanation: "When DNS resolution fails inside a cluster, test CoreDNS VIP (`@10.96.0.10`) with `dig`, verify `kube-dns` Service endpoints, and check Hubble for eBPF policy drops on UDP/53.",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Pods report `Temporary failure in name resolution`. Query the cluster DNS server `@10.96.0.10` directly using `dig` for `kubernetes.default.svc.cluster.local`.",
+        canonical: "dig @10.96.0.10 kubernetes.default.svc.cluster.local",
+        accepted: ["dig @10.96.0.10 kubernetes.default.svc.cluster.local", "dig @10.96.0.10 +short kubernetes.default.svc.cluster.local"],
+        output: `;; connection timed out; no servers could be reached`
+      },
+      {
+        prompt: "STEP 2 of 3: Querying `10.96.0.10` timed out! Check the `endpoints` of Service `kube-dns` in namespace `kube-system` (`-n kube-system`) to see if CoreDNS pods are registered and Ready.",
+        canonical: "kubectl get endpoints kube-dns -n kube-system",
+        accepted: ["kubectl get endpoints kube-dns -n kube-system", "kubectl get ep kube-dns -n kube-system", "kubectl -n kube-system get endpoints kube-dns"],
+        output: `NAME       ENDPOINTS                         AGE
+kube-dns   10.244.0.41:53,10.244.1.19:53     14d`
+      },
+      {
+        prompt: "STEP 3 of 3: CoreDNS endpoints are healthy (`10.244.0.41:53`), which means packets to port 53 are being dropped! Use `hubble observe` to filter for `DROPPED` flows.",
+        canonical: "hubble observe --verdict DROPPED",
+        accepted: ["hubble observe --verdict DROPPED"],
+        output: `Nov  2 22:54:02 default/app-7d4b:51920 -> kube-system/coredns-8b:53 PolicyVerdict:all EGRESS DROPPED (UDP) ✅`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: dig @10.96.0.10 ...", desc: "Test CoreDNS ClusterIP directly" },
+      { token: "Step 2: kubectl get endpoints kube-dns -n kube-system", desc: "Verify Ready CoreDNS pod IPs" },
+      { token: "Step 3: hubble observe --verdict DROPPED", desc: "Spot missing UDP/53 egress rule in NetworkPolicy" }
+    ]
+  },
+  {
+    id: "chain-socket-leak-emfile",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "ss -> ss -tan -> /proc/PID/fd",
+    title: "Incident Chain: Socket & File Descriptor Exhaustion (CLOSE-WAIT Leak)",
+    explanation: "Diagnose socket exhaustion by checking kernel socket summary counters (`ss -s`), inspecting TCP state distribution (`ss -tan`), and listing open file descriptors in `/proc/<PID>/fd`.",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: A gateway node is logging `socket: too many open files`. First, print a high-level summary of total socket statistics across the host using `ss`.",
+        canonical: "ss -s",
+        accepted: ["ss -s", "ss --summary"],
+        output: `Total: 4210
+TCP:   3980 (estab 120, closed 3810, orphaned 0, timewait 40)`
+      },
+      {
+        prompt: "STEP 2 of 3: Nearly 3,800 TCP sockets are stuck! List all TCP sockets across all states with numeric IPs and ports using `ss`.",
+        canonical: "ss -tan",
+        accepted: ["ss -tan", "ss -tanp"],
+        output: `State      Recv-Q Send-Q Local Address:Port   Peer Address:Port
+CLOSE-WAIT 1      0      10.244.1.15:8080     10.244.2.20:39104
+CLOSE-WAIT 1      0      10.244.1.15:8080     10.244.2.20:39108`
+      },
+      {
+        prompt: "STEP 3 of 3: Thousands of sockets are stuck in `CLOSE-WAIT` on PID `4102` inside a minimal container without `lsof`. List the open file descriptors of PID `4102` directly in `/proc` using `ls -l`.",
+        canonical: "ls -l /proc/4102/fd",
+        accepted: ["ls -l /proc/4102/fd", "ls -lah /proc/4102/fd", "ls -la /proc/4102/fd"],
+        output: `lrwx------ 1 root root 64 Nov 2 22:55 1021 -> socket:[99412]
+lrwx------ 1 root root 64 Nov 2 22:55 1022 -> socket:[99418] (Confirmed FD leak in PID 4102 ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: ss -s", desc: "Fast summary of kernel socket counters" },
+      { token: "Step 2: ss -tan", desc: "Identify CLOSE-WAIT / TIME-WAIT / SYN-SENT buildup" },
+      { token: "Step 3: ls -l /proc/4102/fd", desc: "Inspect open file descriptors of PID 4102 via procfs" }
+    ]
+  },
+  {
+    id: "chain-go-race-pprof",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "go (test -race -> bench -> pprof)",
+    title: "Incident Chain: Go Concurrency Race Detection & CPU Profiling",
+    explanation: "Verify concurrent Go systems code with `go test -race ./...`, measure throughput with `go test -bench=.`, and inspect CPU profiles with `go tool pprof`.",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Your concurrent Go packet parser occasionally corrupts a map under load. Run all unit tests across the module (`./...`) with Go's data-race detector (`-race`) enabled.",
+        canonical: "go test -race ./...",
+        accepted: ["go test -race ./..."],
+        output: `ok  	github.com/Sanjeevliv/frametap/pkg/ethernet	0.114s
+ok  	github.com/Sanjeevliv/frametap/pkg/arp     	0.142s`
+      },
+      {
+        prompt: "STEP 2 of 3: After fixing the lock, run all Go benchmarks in the current package using `go test`.",
+        canonical: "go test -bench=.",
+        accepted: ["go test -bench=.", "go test -bench .", "go test -bench=. -benchmem"],
+        output: `BenchmarkDecodePacket-8   10000000   118.4 ns/op   64 B/op   2 allocs/op`
+      },
+      {
+        prompt: "STEP 3 of 3: You captured a CPU profile into `cpu.prof` to see why `BenchmarkDecodePacket` allocates memory. Open `cpu.prof` using Go's `pprof` tool.",
+        canonical: "go tool pprof cpu.prof",
+        accepted: ["go tool pprof cpu.prof", "go tool pprof"],
+        output: `Entering interactive mode (type "help" for commands)
+(pprof) top -> runtime.mallocgc (Confirmed slice allocation hotspot ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: go test -race ./...", desc: "Detect concurrent unsynchronized memory accesses" },
+      { token: "Step 2: go test -bench=.", desc: "Measure ns/op throughput" },
+      { token: "Step 3: go tool pprof cpu.prof", desc: "Analyze CPU or heap profile hotspots" }
+    ]
+  },
+  {
+    id: "chain-mtu-overlay-blackhole",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "ip link -> ip route get -> ping -M do",
+    title: "Incident Chain: Overlay Network Path MTU Blackhole",
+    explanation: "Diagnose overlay MTU drops by checking device MTUs (`ip link`), querying the kernel route lookup (`ip route get`), and probing with Don't Fragment packets (`ping -c 4 -M do -s 1472`).",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Cross-node HTTPS calls hang right after the TCP 3-way handshake. First, inspect all Layer 2 interfaces and their configured MTUs.",
+        canonical: "ip link",
+        accepted: ["ip link", "ip l", "ip link show"],
+        output: `2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 state UP
+4: cilium_vxlan: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP`
+      },
+      {
+        prompt: "STEP 2 of 3: Notice `cilium_vxlan` has MTU 1500 while underlay `eth0` has MTU 1450! Query the kernel FIB for the exact route and outgoing device used to reach remote pod `10.244.2.10`.",
+        canonical: "ip route get 10.244.2.10",
+        accepted: ["ip route get 10.244.2.10", "ip r get 10.244.2.10"],
+        output: `10.244.2.10 via 10.244.0.0 dev cilium_host src 10.244.0.214 mtu 1500`
+      },
+      {
+        prompt: "STEP 3 of 3: Prove that 1500-byte packets to `10.244.2.10` are being dropped due to fragmentation by sending `4` ICMP probes with Don't Fragment (`-M do`) and payload size `1472`.",
+        canonical: "ping -c 4 -M do -s 1472 10.244.2.10",
+        accepted: ["ping -c 4 -M do -s 1472 10.244.2.10", "ping -M do -s 1472 10.244.2.10"],
+        output: `ping: local error: message too long, mtu=1400 (Confirmed overlay MTU mismatch ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: ip link", desc: "Compare underlay NIC MTU vs overlay interface MTU" },
+      { token: "Step 2: ip route get 10.244.2.10", desc: "Verify outgoing route and path MTU" },
+      { token: "Step 3: ping -c 4 -M do -s 1472 10.244.2.10", desc: "Test unfragmented 1500-byte L3 packet delivery" }
+    ]
+  },
+  {
+    id: "chain-node-notready-kubelet",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "systemctl -> journalctl -> systemctl",
+    title: "Incident Chain: Kubernetes Worker Node NotReady Recovery",
+    explanation: "When a worker node becomes `NotReady`, SSH to the node, check `systemctl status kubelet`, inspect `journalctl -u kubelet -f`, and restart the unhealthy runtime/agent.",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Worker node `node-2` just flipped to `NotReady`. After SSHing onto `node-2`, check the systemd service status of `kubelet`.",
+        canonical: "systemctl status kubelet",
+        accepted: ["systemctl status kubelet", "systemctl status kubelet.service"],
+        output: `● kubelet.service - kubelet: The Kubernetes Node Agent
+     Active: active (running) — PLEG is not healthy`
+      },
+      {
+        prompt: "STEP 2 of 3: Stream the live systemd journal logs specifically for the `kubelet` unit to see why PLEG (Pod Lifecycle Event Generator) is failing.",
+        canonical: "journalctl -u kubelet -f",
+        accepted: ["journalctl -u kubelet -f", "journalctl -fu kubelet", "journalctl -u kubelet"],
+        output: `Nov 02 23:01:12 node-2 kubelet[1294]: E1102 "GenericPLEG: Unable toouden relist pods" err="rpc error: dial unix /run/containerd/containerd.sock: timeout"`
+      },
+      {
+        prompt: "STEP 3 of 3: Kubelet cannot reach `/run/containerd/containerd.sock` because `containerd` is hung. Restart the `containerd` systemd service.",
+        canonical: "systemctl restart containerd",
+        accepted: ["systemctl restart containerd", "systemctl restart containerd.service"],
+        output: `(containerd.service restarted — kubelet PLEG healthy and node-2 Ready ✅)`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: systemctl status kubelet", desc: "Check kubelet daemon status on the node" },
+      { token: "Step 2: journalctl -u kubelet -f", desc: "Read kubelet logs to identify CRI/CNI/disk root cause" },
+      { token: "Step 3: systemctl restart containerd", desc: "Restart hung container runtime daemon" }
+    ]
+  },
+  {
+    id: "chain-distroless-netns-sniff",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "docker inspect -> nsenter -> tcpdump",
+    title: "Incident Chain: Debugging a Distroless Container's Network Stack from the Host",
+    explanation: "When a container has no shell or networking tools installed, find its host PID via `docker inspect`, then use `nsenter -t <PID> -n` to run host tools (`ss`, `tcpdump`) inside the container's network namespace.",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: Container `api-gateway` is built from `gcr.io/distroless/static` (no shell or `ss` inside). First, inspect the low-level JSON metadata of container `api-gateway` to find its host PID (`State.Pid`).",
+        canonical: "docker inspect api-gateway",
+        accepted: ["docker inspect api-gateway", "docker container inspect api-gateway"],
+        output: `"State": { "Status": "running", "Pid": 14820, "OOMKilled": false }`
+      },
+      {
+        prompt: "STEP 2 of 3: The container's host PID is `14820`. Use `nsenter` to enter PID `14820`'s network namespace and run `ss -tulpn`.",
+        canonical: "nsenter -t 14820 -n ss -tulpn",
+        accepted: ["nsenter -t 14820 -n ss -tulpn", "nsenter -n -t 14820 ss -tulpn"],
+        output: `Netid State  Recv-Q Send-Q Local Address:Port  Peer Address:Port Process
+tcp   LISTEN 0      4096   *:80               *:*               users:(("api",pid=14820,fd=3))`
+      },
+      {
+        prompt: "STEP 3 of 3: Now capture live packets on `eth0` for `port 80` with numeric IPs and ports using `tcpdump`.",
+        canonical: "tcpdump -i eth0 -nn port 80",
+        accepted: ["tcpdump -i eth0 -nn port 80", "tcpdump -nn -i eth0 port 80"],
+        output: `23:05:10.118 IP 10.244.1.10.48122 > 172.17.0.3.80: Flags [S], seq 1094812 ✅`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: docker inspect api-gateway", desc: "Retrieve container's host PID (State.Pid)" },
+      { token: "Step 2: nsenter -t 14820 -n ss -tulpn", desc: "Run host ss inside PID 14820's network namespace" },
+      { token: "Step 3: tcpdump -i eth0 -nn port 80", desc: "Capture packets on port 80 with numeric output" }
+    ]
+  },
+  {
+    id: "chain-helm-failed-rollback",
+    session: "cisco-incidents",
+    level: 4,
+    difficulty: "Level 4 · Incident Chain",
+    tool: "helm (list -> history -> rollback)",
+    title: "Incident Chain: Triage & Rollback a Failed Helm Release",
+    explanation: "Locate broken Helm deployments across namespaces (`helm list -A`), check revision history (`helm history`), and roll back to the last stable revision (`helm rollback`).",
+    steps: [
+      {
+        prompt: "STEP 1 of 3: A monitoring upgrade failed during deployment. List all Helm releases across all namespaces.",
+        canonical: "helm list -A",
+        accepted: ["helm list -A", "helm ls -A", "helm list --all-namespaces"],
+        output: `NAME        NAMESPACE   REVISION  STATUS   CHART
+prometheus  monitoring  4         failed   kube-prom-65.1`
+      },
+      {
+        prompt: "STEP 2 of 3: Release `prometheus` is in `failed` status at revision 4. View the revision history of `prometheus` to find the last working revision number.",
+        canonical: "helm history prometheus",
+        accepted: ["helm history prometheus"],
+        output: `REVISION  STATUS      CHART           DESCRIPTION
+3         superseded  kube-prom-65.0  Upgrade complete
+4         failed      kube-prom-65.1  Upgrade "prometheus" failed: timed out`
+      },
+      {
+        prompt: "STEP 3 of 3: Revision `3` was the last working release. Roll back `prometheus` to revision `3`.",
+        canonical: "helm rollback prometheus 3",
+        accepted: ["helm rollback prometheus 3"],
+        output: `Rollback was a success! Happy Helming! ✅`
+      }
+    ],
+    grammar: [
+      { token: "Step 1: helm list -A", desc: "Find release name, namespace, and status across cluster" },
+      { token: "Step 2: helm history prometheus", desc: "Identify last healthy revision number" },
+      { token: "Step 3: helm rollback prometheus 3", desc: "Roll back release to revision 3" }
+    ]
   }
 ];
 

@@ -6,16 +6,18 @@
   "use strict";
 
   const STORAGE_KEY = "sre_lab_incremental_v4";
+  const SPRINT_LENGTH = 10;
 
   const state = {
     session: "all",
     levelFilter: "auto", // "auto" | "1" | "2" | "3" | "4"
-    modeFilter: "adaptive", // "adaptive" (Learn -> Test) | "test" | "learn"
+    modeFilter: "adaptive", // "adaptive" (Learn -> Test) | "test" | "learn" | "sprint"
     currentQuestion: null,
     currentPhase: "learn", // "learn" | "test"
     stepIndex: 0,
     stepHistory: [],
     revealedSolutionOnCurrent: false,
+    failedStepOnCurrent: false,
     turnCounter: 0,
     streak: 0,
     // memory[id] = { stage: 0(learn) | 1(ready_for_test) | 2(mastered), lastTurn: number, failedTest: boolean }
@@ -23,6 +25,16 @@
     cmdHistory: [],
     cmdHistoryIdx: -1,
     feedback: null,
+    sprint: {
+      active: false,
+      finished: false,
+      questions: [],
+      index: 0,
+      results: [],
+      startTime: 0,
+      elapsedSec: 0,
+      timerId: null,
+    },
   };
 
   function loadStats() {
@@ -51,19 +63,138 @@
     } catch (_) {}
   }
 
-  const BUNDLE_FLAG_TOOLS = new Set([
-    "ls",
-    "ss",
-    "grep",
-    "du",
-    "df",
-    "free",
-    "nc",
-    "ps",
-    "tcpdump",
-    "journalctl",
-    "dmesg",
-    "tar",
+  // Order-Independent Flag & Alias Canonicalizer Across ALL Tools
+  const K8S_RESOURCE_ALIASES = {
+    po: "pods",
+    pod: "pods",
+    pods: "pods",
+    svc: "services",
+    service: "services",
+    services: "services",
+    deploy: "deployments",
+    deployment: "deployments",
+    deployments: "deployments",
+    ep: "endpoints",
+    endpoint: "endpoints",
+    endpoints: "endpoints",
+    ev: "events",
+    event: "events",
+    events: "events",
+    no: "nodes",
+    node: "nodes",
+    nodes: "nodes",
+    netpol: "networkpolicies",
+    networkpolicy: "networkpolicies",
+    networkpolicies: "networkpolicies",
+    ns: "namespaces",
+    namespace: "namespaces",
+    namespaces: "namespaces",
+  };
+
+  const IP_OBJECT_ALIASES = {
+    a: "addr",
+    addr: "addr",
+    address: "addr",
+    l: "link",
+    link: "link",
+    r: "route",
+    route: "route",
+    n: "neigh",
+    neigh: "neigh",
+    neighbor: "neigh",
+    neighbour: "neigh",
+  };
+
+  const FLAG_ALIASES = {
+    "--all-namespaces": "-A",
+    "--previous": "-p",
+    "--namespace": "-n",
+    "--output": "-o",
+    "--selector": "-l",
+    "--follow": "-f",
+    "--max-depth": "-d",
+  };
+
+  // Flags that consume the following token as their value (per tool)
+  const TOOL_VALUED_FLAGS = {
+    kubectl: new Set([
+      "-n",
+      "-o",
+      "-l",
+      "-c",
+      "--sort-by",
+      "--field-selector",
+      "--tail",
+    ]),
+    helm: new Set(["-n", "-f", "--values", "--revision"]),
+    hubble: new Set([
+      "--verdict",
+      "--pod",
+      "--namespace",
+      "-n",
+      "--protocol",
+      "--to-pod",
+      "--from-pod",
+      "--last",
+      "-o",
+    ]),
+    ping: new Set(["-c", "-M", "-s", "-i", "-W", "-w", "-I"]),
+    tcpdump: new Set(["-i", "-c", "-s", "-w", "-r"]),
+    journalctl: new Set([
+      "-u",
+      "-n",
+      "-S",
+      "-U",
+      "-p",
+      "-b",
+      "--since",
+      "--until",
+      "--vacuum-size",
+      "--vacuum-time",
+    ]),
+    curl: new Set([
+      "-o",
+      "-w",
+      "-H",
+      "-X",
+      "-d",
+      "--resolve",
+      "--connect-timeout",
+      "-m",
+    ]),
+    find: new Set([
+      "-type",
+      "-size",
+      "-name",
+      "-iname",
+      "-mtime",
+      "-mmin",
+      "-maxdepth",
+      "-mindepth",
+      "-user",
+      "-perm",
+    ]),
+    nsenter: new Set(["-t"]),
+    strace: new Set(["-p", "-e", "-o", "-s"]),
+    grep: new Set(["-e", "-f", "-m", "-A", "-B", "-C"]),
+    du: new Set(["-d"]),
+    nc: new Set(["-w", "-p", "-s"]),
+    tar: new Set(["-f", "-C"]),
+    docker: new Set(["-f", "--format", "--tail", "--since", "-n"]),
+    crictl: new Set(["--tail", "-n"]),
+    git: new Set(["-n", "--grep"]),
+    go: new Set(["-bench", "-run", "-cpuprofile", "-memprofile"]),
+    lsof: new Set(["-i", "-p", "-u"]),
+  };
+
+  // Multi-letter single-dash boolean flags that should NOT be split into individual characters
+  const MULTI_CHAR_SINGLE_DASH_BOOLS = new Set([
+    "-delete",
+    "-print",
+    "-empty",
+    "-race",
+    "-benchmem",
+    "-no-headers",
   ]);
 
   function tokenizeCommand(cmd) {
@@ -93,55 +224,130 @@
     return tokens;
   }
 
+  function normalizeFlagKey(flag) {
+    return FLAG_ALIASES[flag] || flag;
+  }
+
   function canonicalizeSingleCommand(cmdStr) {
-    const tokens = tokenizeCommand(cmdStr);
-    if (tokens.length === 0) return "";
+    const rawTokens = tokenizeCommand(cmdStr);
+    if (rawTokens.length === 0) return "";
 
-    const baseTool = tokens[0];
-    if (!BUNDLE_FLAG_TOOLS.has(baseTool)) {
-      return tokens.join(" ");
-    }
+    const baseTool = rawTokens[0];
+    const valuedSet = TOOL_VALUED_FLAGS[baseTool] || new Set();
 
-    const VALUED_SHORT_FLAGS = {
-      tcpdump: new Set(["-i", "-c", "-s", "-w", "-r"]),
-      journalctl: new Set(["-u", "-n", "-S", "-U", "-p", "-b"]),
-      grep: new Set(["-e", "-f", "-m", "-A", "-B", "-C"]),
-      du: new Set(["-d"]),
-      nc: new Set(["-w", "-p", "-s"]),
-      tar: new Set(["-f", "-C"]),
-    };
+    const positional = [];
+    const shortBoolFlags = new Set();
+    const longBoolFlags = new Set();
+    const valuedFlags = [];
 
-    const valuedSet = VALUED_SHORT_FLAGS[baseTool] || new Set();
-    const shortFlags = new Set();
-    const otherTokens = [baseTool];
+    for (let i = 1; i < rawTokens.length; i++) {
+      const tok = rawTokens[i];
 
-    for (let i = 1; i < tokens.length; i++) {
-      const tok = tokens[i];
+      // 1. Handle --flag=val or -f=val
+      if (tok.startsWith("-") && tok.includes("=")) {
+        const eqIdx = tok.indexOf("=");
+        const rawKey = tok.slice(0, eqIdx);
+        const val = tok.slice(eqIdx + 1);
+        const normKey = normalizeFlagKey(rawKey);
+        valuedFlags.push(`${normKey}=${val}`);
+        continue;
+      }
+
+      const normTok = normalizeFlagKey(tok);
+
+      // 2. Handle valued flags taking the next token (e.g. -n kube-system, -c 4, -type f)
+      if (valuedSet.has(normTok) && i + 1 < rawTokens.length) {
+        valuedFlags.push(`${normTok}=${rawTokens[i + 1]}`);
+        i += 1;
+        continue;
+      }
+
+      // 3. Handle attached numeric short flags for valued flags (e.g. -c4, -n20, -C3, -d1)
+      const attachedMatch = /^(-[a-zA-Z])(\d+)$/.exec(tok);
+      if (attachedMatch && valuedSet.has(attachedMatch[1])) {
+        valuedFlags.push(`${attachedMatch[1]}=${attachedMatch[2]}`);
+        continue;
+      }
+
+      // 4. Handle multi-char single-dash boolean flags (e.g. find -delete, go test -race)
+      if (MULTI_CHAR_SINGLE_DASH_BOOLS.has(normTok)) {
+        longBoolFlags.add(normTok);
+        continue;
+      }
+
+      // 5. Handle long boolean flags (--something)
+      if (normTok.startsWith("--")) {
+        longBoolFlags.add(normTok);
+        continue;
+      }
+
+      // 6. Handle short boolean flag or bundled short flags (-tulpn, -la, -A, -p)
       if (
-        tok.startsWith("-") &&
-        !tok.startsWith("--") &&
-        tok.length > 1 &&
-        !/^-\d+$/.test(tok) &&
-        !valuedSet.has(tok) &&
-        /^-[a-zA-Z]+$/.test(tok)
+        normTok.startsWith("-") &&
+        normTok.length > 1 &&
+        /^-[a-zA-Z0-9]+$/.test(normTok)
       ) {
-        if (baseTool === "tcpdump" && (tok === "-nn" || tok === "-n")) {
-          shortFlags.add("n");
+        if (baseTool === "tcpdump" && (normTok === "-nn" || normTok === "-n")) {
+          shortBoolFlags.add("n");
         } else {
-          for (const ch of tok.slice(1)) {
-            shortFlags.add(ch);
+          for (const ch of normTok.slice(1)) {
+            shortBoolFlags.add(ch);
           }
         }
         continue;
       }
-      otherTokens.push(tok);
+
+      // 7. Positional token normalization per tool
+      if (baseTool === "kubectl") {
+        // Expand resource/name syntax (e.g. deployment/payment-api -> deployments payment-api)
+        if (tok.includes("/") && !tok.startsWith("/") && !tok.startsWith(".")) {
+          const slashIdx = tok.indexOf("/");
+          const resType = tok.slice(0, slashIdx).toLowerCase();
+          const resName = tok.slice(slashIdx + 1);
+          if (K8S_RESOURCE_ALIASES[resType]) {
+            positional.push(K8S_RESOURCE_ALIASES[resType], resName);
+            continue;
+          }
+        }
+        const lower = tok.toLowerCase();
+        if (K8S_RESOURCE_ALIASES[lower]) {
+          positional.push(K8S_RESOURCE_ALIASES[lower]);
+          continue;
+        }
+      } else if (baseTool === "helm") {
+        if (positional.length === 0 && tok === "ls") {
+          positional.push("list");
+          continue;
+        }
+      } else if (baseTool === "ip") {
+        if (positional.length === 0 && IP_OBJECT_ALIASES[tok]) {
+          positional.push(IP_OBJECT_ALIASES[tok]);
+          continue;
+        }
+        if (
+          positional.length === 1 &&
+          (tok === "show" || tok === "list") &&
+          ["addr", "link", "route", "neigh"].includes(positional[0])
+        ) {
+          // Omit default 'show'/'list' action so `ip a`, `ip addr`, and `ip addr show` match
+          continue;
+        }
+      }
+
+      positional.push(tok);
     }
 
-    if (shortFlags.size > 0) {
-      const sortedBundle = "-" + Array.from(shortFlags).sort().join("");
-      return [baseTool, sortedBundle, ...otherTokens.slice(1)].join(" ");
+    const parts = [baseTool, ...positional];
+    if (shortBoolFlags.size > 0) {
+      parts.push("-" + Array.from(shortBoolFlags).sort().join(""));
     }
-    return otherTokens.join(" ");
+    if (longBoolFlags.size > 0) {
+      parts.push(...Array.from(longBoolFlags).sort());
+    }
+    if (valuedFlags.length > 0) {
+      parts.push(...valuedFlags.sort());
+    }
+    return parts.join(" ");
   }
 
   function canonicalizeCommand(raw) {
@@ -174,6 +380,12 @@
       /`([^`]+)`/g,
       '<code class="lab-inline-code">$1</code>'
     );
+  }
+
+  function formatSeconds(sec) {
+    const mins = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return `${String(mins).padStart(2, "0")}:${String(rem).padStart(2, "0")}`;
   }
 
   function buildTokenDiffHtml(rawUserCmd, canonicalCmd) {
@@ -275,7 +487,6 @@
     for (let lvl = 1; lvl <= 3; lvl++) {
       const inLevel = topicPool.filter((q) => (q.level || 1) === lvl);
       if (inLevel.length === 0) continue;
-      // Unlock the next level once at least 50% (or at least 4) of the current level have been practiced/mastered
       const progressed = inLevel.filter(
         (q) => state.memory[q.id] && state.memory[q.id].stage >= 1
       ).length;
@@ -287,7 +498,102 @@
     return 4;
   }
 
+  // --- 10-Question Mock Sprint Mode ---
+  function stopSprintTimer() {
+    if (state.sprint.timerId) {
+      clearInterval(state.sprint.timerId);
+      state.sprint.timerId = null;
+    }
+  }
+
+  function startSprint() {
+    stopSprintTimer();
+    const topicPool = getTopicPool();
+    let pool = topicPool;
+    if (state.levelFilter !== "auto") {
+      const targetLvl = Number(state.levelFilter);
+      const exact = topicPool.filter((q) => (q.level || 1) === targetLvl);
+      if (exact.length > 0) pool = exact;
+    }
+
+    // Shuffle and pick up to SPRINT_LENGTH diverse questions across sessions
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    const picked = [];
+    const seenSessions = new Set();
+
+    // First pass: one per session for broad coverage
+    for (const q of shuffled) {
+      if (picked.length >= SPRINT_LENGTH) break;
+      if (!seenSessions.has(q.session)) {
+        seenSessions.add(q.session);
+        picked.push(q);
+      }
+    }
+    // Second pass: fill remaining slots up to SPRINT_LENGTH
+    for (const q of shuffled) {
+      if (picked.length >= SPRINT_LENGTH) break;
+      if (!picked.includes(q)) {
+        picked.push(q);
+      }
+    }
+
+    state.sprint = {
+      active: true,
+      finished: false,
+      questions: picked,
+      index: 0,
+      results: [],
+      startTime: Date.now(),
+      elapsedSec: 0,
+      timerId: setInterval(() => {
+        if (!state.sprint.active || state.sprint.finished) return;
+        state.sprint.elapsedSec = Math.floor(
+          (Date.now() - state.sprint.startTime) / 1000
+        );
+        const timerEl = document.getElementById("lab-sprint-timer");
+        if (timerEl) {
+          timerEl.textContent = formatSeconds(state.sprint.elapsedSec);
+        }
+      }, 1000),
+    };
+
+    state.currentQuestion = picked[0] || null;
+    state.currentPhase = "test";
+    state.stepIndex = 0;
+    state.stepHistory = [];
+    state.revealedSolutionOnCurrent = false;
+    state.failedStepOnCurrent = false;
+    state.feedback = null;
+  }
+
+  function recordSprintQuestionResult(wasCorrect, userCmd) {
+    if (!state.sprint.active || state.sprint.finished) return;
+    const q = state.currentQuestion;
+    if (!q) return;
+    if (state.sprint.results.length <= state.sprint.index) {
+      state.sprint.results.push({
+        question: q,
+        correct: Boolean(
+          wasCorrect &&
+            !state.revealedSolutionOnCurrent &&
+            !state.failedStepOnCurrent
+        ),
+        userCmd: userCmd || "",
+      });
+    }
+  }
+
   function pickNextQuestion() {
+    if (state.modeFilter === "sprint") {
+      if (!state.sprint.active) {
+        startSprint();
+      }
+      return;
+    }
+
+    stopSprintTimer();
+    state.sprint.active = false;
+
     const topicPool = getTopicPool();
     if (topicPool.length === 0) {
       state.currentQuestion = null;
@@ -315,11 +621,6 @@
         ? levelPool.filter((q) => q.id !== prevId)
         : levelPool;
 
-    // Bucket candidates by Learn -> Test lifecycle:
-    // 1. dueForTest: stage === 1 (learned, waiting to be tested cold after >= 2 turns)
-    // 2. failedRetry: stage === 0 && failedTest (missed in Test mode, needs Learn reinforcement)
-    // 3. unseenLearn: no memory entry yet (needs initial Learn phase)
-    // 4. mastered: stage === 2
     const dueForTest = [];
     const failedRetry = [];
     const unseenLearn = [];
@@ -347,7 +648,12 @@
     let phase = "learn";
 
     if (state.modeFilter === "test") {
-      const nonMastered = [...dueForTest, ...failedRetry, ...unseenLearn, ...waitingCooldown];
+      const nonMastered = [
+        ...dueForTest,
+        ...failedRetry,
+        ...unseenLearn,
+        ...waitingCooldown,
+      ];
       const pool = nonMastered.length > 0 ? nonMastered : candidates;
       chosen = pool[Math.floor(Math.random() * pool.length)];
       phase = "test";
@@ -358,22 +664,27 @@
       phase = "learn";
     } else {
       // Adaptive Learn -> Test mode:
-      // Alternate naturally between testing recently learned commands and introducing new ones!
-      if (dueForTest.length > 0 && (Math.random() < 0.65 || (unseenLearn.length === 0 && failedRetry.length === 0))) {
+      if (
+        dueForTest.length > 0 &&
+        (Math.random() < 0.65 ||
+          (unseenLearn.length === 0 && failedRetry.length === 0))
+      ) {
         chosen = dueForTest[Math.floor(Math.random() * dueForTest.length)];
         phase = "test";
       } else if (failedRetry.length > 0 && Math.random() < 0.7) {
         chosen = failedRetry[Math.floor(Math.random() * failedRetry.length)];
         phase = "learn";
       } else if (unseenLearn.length > 0) {
-        // Pick from the lowest uncompleted incremental level first so learning is genuinely incremental!
         unseenLearn.sort((a, b) => (a.level || 1) - (b.level || 1));
         const minLevel = unseenLearn[0].level || 1;
-        const lowestTier = unseenLearn.filter((q) => (q.level || 1) === minLevel);
+        const lowestTier = unseenLearn.filter(
+          (q) => (q.level || 1) === minLevel
+        );
         chosen = lowestTier[Math.floor(Math.random() * lowestTier.length)];
         phase = "learn";
       } else if (waitingCooldown.length > 0) {
-        chosen = waitingCooldown[Math.floor(Math.random() * waitingCooldown.length)];
+        chosen =
+          waitingCooldown[Math.floor(Math.random() * waitingCooldown.length)];
         phase = "test";
       } else {
         chosen = candidates[Math.floor(Math.random() * candidates.length)];
@@ -386,6 +697,7 @@
     state.stepIndex = 0;
     state.stepHistory = [];
     state.revealedSolutionOnCurrent = false;
+    state.failedStepOnCurrent = false;
     state.feedback = null;
   }
 
@@ -398,7 +710,6 @@
 
     if (state.currentPhase === "learn") {
       if (isSuccess) {
-        // Graduated from Learn (0) -> Ready for Test (1)
         state.memory[questionId] = {
           stage: Math.max(1, prev.stage),
           lastTurn: state.turnCounter,
@@ -408,15 +719,19 @@
       return;
     }
 
-    // In Test mode:
-    if (isSuccess && !state.revealedSolutionOnCurrent) {
+    // In Test / Sprint mode:
+    if (
+      isSuccess &&
+      !state.revealedSolutionOnCurrent &&
+      !state.failedStepOnCurrent
+    ) {
       state.memory[questionId] = {
         stage: 2, // Mastered!
         lastTurn: state.turnCounter,
         failedTest: false,
       };
     } else {
-      // Missed in Test mode -> drop back to Stage 0 (Learn) so it gets re-taught and re-tested!
+      // Missed in Test/Sprint mode -> drop back to Stage 0 (Learn) so it gets re-taught and re-tested!
       state.memory[questionId] = {
         stage: 0,
         lastTurn: state.turnCounter,
@@ -489,6 +804,145 @@
     `;
   }
 
+  function renderSprintSummary() {
+    const mount = document.getElementById("lab-question-mount");
+    if (!mount) return;
+
+    const results = state.sprint.results;
+    const total = results.length || 1;
+    const correctCount = results.filter((r) => r.correct).length;
+    const pct = Math.round((correctCount / total) * 100);
+    const timeStr = formatSeconds(state.sprint.elapsedSec);
+
+    // Per-domain aggregation
+    const bySession = {};
+    for (const r of results) {
+      const sid = r.question.session;
+      if (!bySession[sid]) {
+        bySession[sid] = { total: 0, correct: 0 };
+      }
+      bySession[sid].total += 1;
+      if (r.correct) bySession[sid].correct += 1;
+    }
+
+    const domainPills = Object.keys(bySession)
+      .map((sid) => {
+        const d = bySession[sid];
+        const ok = d.correct === d.total;
+        return `
+          <span class="lab-badge ${ok ? "lab-badge-test" : "lab-badge-weak"}">
+            ${escapeHtml(getSessionTitle(sid))}: ${d.correct}/${d.total}
+          </span>
+        `;
+      })
+      .join("");
+
+    const missed = results.filter((r) => !r.correct);
+    const missedHtml =
+      missed.length === 0
+        ? `<div class="lab-feedback-banner lab-feedback-banner--correct mt-3">
+             <i class="fas fa-trophy me-2"></i><strong>Flawless Sprint!</strong> All ${total} commands recalled cold with zero spoilers.
+           </div>`
+        : `
+          <div class="mt-3">
+            <div class="small fw-bold text-uppercase text-secondary mb-2">
+              Missed Commands (Queued into Learn → Test)
+            </div>
+            <div class="d-flex flex-column gap-2">
+              ${missed
+                .map((r) => {
+                  const q = r.question;
+                  const target =
+                    q.steps && q.steps.length > 0
+                      ? q.steps.map((s) => s.canonical).join("  →  ")
+                      : q.canonical;
+                  return `
+                    <div class="lab-study-box py-2 px-3">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <strong class="small">${escapeHtml(q.title)}</strong>
+                        <span class="lab-badge lab-badge-session">${escapeHtml(
+                          getSessionTitle(q.session)
+                        )}</span>
+                      </div>
+                      <div class="mt-1">
+                        <code class="lab-canonical-code">${escapeHtml(
+                          target
+                        )}</code>
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("")}
+            </div>
+          </div>
+        `;
+
+    mount.innerHTML = `
+      <div class="lab-question-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <span class="lab-badge lab-badge-war"><i class="fas fa-flag-checkered me-1"></i>On-Call Sprint Scorecard</span>
+          <span class="small text-secondary font-monospace"><i class="fas fa-clock me-1"></i>Elapsed: <strong>${timeStr}</strong></span>
+        </div>
+
+        <h2 class="lab-q-title mb-1">Score: ${correctCount} / ${results.length} (${pct}%)</h2>
+        <p class="small text-secondary mb-3">
+          Blind recall across ${Object.keys(bySession).length} SRE domains in ${timeStr}.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 mb-2">
+          ${domainPills}
+        </div>
+
+        ${missedHtml}
+
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <button type="button" class="btn btn-sm lab-btn-enter" id="lab-sprint-restart-btn">
+            <i class="fas fa-rotate-right me-1"></i>New 10-Q Sprint
+          </button>
+          ${
+            missed.length > 0
+              ? `<button type="button" class="btn btn-sm lab-btn-ghost" id="lab-sprint-learn-missed-btn">
+                   <i class="fas fa-graduation-cap me-1"></i>Practice Missed in Learn → Test
+                 </button>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+
+    const restartBtn = document.getElementById("lab-sprint-restart-btn");
+    if (restartBtn) {
+      restartBtn.addEventListener("click", () => {
+        startSprint();
+        renderHeaderStats();
+        renderCard();
+      });
+    }
+
+    const learnMissedBtn = document.getElementById(
+      "lab-sprint-learn-missed-btn"
+    );
+    if (learnMissedBtn) {
+      learnMissedBtn.addEventListener("click", () => {
+        stopSprintTimer();
+        state.sprint.active = false;
+        state.modeFilter = "adaptive";
+        const modeSelect = document.getElementById("lab-mode-select");
+        if (modeSelect) modeSelect.value = "adaptive";
+        // Immediately load the first missed question in Learn Phase
+        state.currentQuestion = missed[0].question;
+        state.currentPhase = "learn";
+        state.stepIndex = 0;
+        state.stepHistory = [];
+        state.revealedSolutionOnCurrent = false;
+        state.failedStepOnCurrent = false;
+        state.feedback = null;
+        renderHeaderStats();
+        renderCard();
+      });
+    }
+  }
+
   function renderFeedback(q, fb) {
     if (!fb) return "";
 
@@ -536,7 +990,6 @@
       `;
     }
 
-    // In Learn mode, the Study Box is already visible above the terminal—just show the simulated output on success!
     if (state.currentPhase === "learn") {
       const outputPreview = target.output || q.sampleOutput || "";
       return `
@@ -617,6 +1070,11 @@
     const mount = document.getElementById("lab-question-mount");
     if (!mount) return;
 
+    if (state.modeFilter === "sprint" && state.sprint.finished) {
+      renderSprintSummary();
+      return;
+    }
+
     const q = state.currentQuestion;
     if (!q) {
       mount.innerHTML = `<div class="lab-question-card text-center p-4">No questions found.</div>`;
@@ -628,15 +1086,24 @@
     const isLearnPhase = state.currentPhase === "learn";
     const mem = state.memory[q.id];
 
-    const phaseBadge = isLearnPhase
-      ? `<span class="lab-badge lab-badge-learn"><i class="fas fa-graduation-cap me-1"></i>Learn Phase</span>`
-      : `<span class="lab-badge lab-badge-test"><i class="fas fa-bolt me-1"></i>Test Recall (No Spoilers)</span>`;
+    let phaseBadge = "";
+    if (state.modeFilter === "sprint" && state.sprint.active) {
+      phaseBadge = `<span class="lab-badge lab-badge-war"><i class="fas fa-stopwatch me-1"></i>Sprint ${
+        state.sprint.index + 1
+      }/${state.sprint.questions.length} · <span id="lab-sprint-timer" class="ms-1 font-monospace">${formatSeconds(
+        state.sprint.elapsedSec
+      )}</span></span>`;
+    } else if (isLearnPhase) {
+      phaseBadge = `<span class="lab-badge lab-badge-learn"><i class="fas fa-graduation-cap me-1"></i>Learn Phase</span>`;
+    } else {
+      phaseBadge = `<span class="lab-badge lab-badge-test"><i class="fas fa-bolt me-1"></i>Test Recall (No Spoilers)</span>`;
+    }
 
     const levelBadge = `<span class="lab-badge lab-badge-session">${escapeHtml(
       q.difficulty || "Level " + (q.level || 1)
     )}</span>`;
 
-    // Only show the tool badge during Learn phase—hide it during Test phase so it never spoils the answer!
+    // Only show the tool badge during Learn phase—hide it during Test/Sprint phase so it never spoils the answer!
     const toolBadge = isLearnPhase
       ? `<span class="lab-badge lab-badge-tool"><i class="fas fa-terminal me-1"></i>${escapeHtml(
           q.tool
@@ -644,7 +1111,7 @@
       : "";
 
     const retryBadge =
-      mem && mem.failedTest
+      mem && mem.failedTest && state.modeFilter !== "sprint"
         ? `<span class="lab-badge lab-badge-weak">Reviewing Missed Command 🔁</span>`
         : "";
 
@@ -822,12 +1289,15 @@
           if (isFinalStep) {
             state.streak += 1;
             recordOutcome(q.id, true);
+            recordSprintQuestionResult(true, rawVal);
           }
           saveStats();
           renderHeaderStats();
         } else if (result.status === "incorrect") {
           state.streak = 0;
+          state.failedStepOnCurrent = true;
           recordOutcome(q.id, false);
+          recordSprintQuestionResult(false, rawVal);
           saveStats();
           renderHeaderStats();
         }
@@ -843,6 +1313,13 @@
 
     if (skipBtn) {
       skipBtn.addEventListener("click", () => {
+        if (state.modeFilter === "sprint" && state.sprint.active) {
+          recordOutcome(q.id, false);
+          recordSprintQuestionResult(false, "");
+          saveStats();
+          advanceSprintStep();
+          return;
+        }
         pickNextQuestion();
         renderHeaderStats();
         renderCard();
@@ -853,6 +1330,7 @@
       revealBtn.addEventListener("click", () => {
         state.revealedSolutionOnCurrent = true;
         recordOutcome(q.id, false);
+        recordSprintQuestionResult(false, "");
         saveStats();
         const prev = state.feedback || {};
         state.feedback = {
@@ -865,6 +1343,26 @@
         updateFeedbackSlot();
         if (input) input.focus();
       });
+    }
+  }
+
+  function advanceSprintStep() {
+    if (state.sprint.index < state.sprint.questions.length - 1) {
+      state.sprint.index += 1;
+      state.currentQuestion = state.sprint.questions[state.sprint.index];
+      state.currentPhase = "test";
+      state.stepIndex = 0;
+      state.stepHistory = [];
+      state.revealedSolutionOnCurrent = false;
+      state.failedStepOnCurrent = false;
+      state.feedback = null;
+      renderHeaderStats();
+      renderCard();
+    } else {
+      state.sprint.finished = true;
+      stopSprintTimer();
+      renderHeaderStats();
+      renderSprintSummary();
     }
   }
 
@@ -885,6 +1383,15 @@
       state.stepIndex += 1;
       state.feedback = null;
       renderCard();
+      return;
+    }
+
+    if (state.modeFilter === "sprint" && state.sprint.active) {
+      recordSprintQuestionResult(
+        state.feedback && state.feedback.status === "correct",
+        state.feedback ? state.feedback.userCmd : ""
+      );
+      advanceSprintStep();
       return;
     }
 
@@ -936,7 +1443,11 @@
 
       topicSelect.addEventListener("change", () => {
         state.session = topicSelect.value || "all";
-        pickNextQuestion();
+        if (state.modeFilter === "sprint") {
+          startSprint();
+        } else {
+          pickNextQuestion();
+        }
         renderHeaderStats();
         renderCard();
       });
@@ -946,7 +1457,11 @@
     if (levelSelect) {
       levelSelect.addEventListener("change", () => {
         state.levelFilter = levelSelect.value || "auto";
-        pickNextQuestion();
+        if (state.modeFilter === "sprint") {
+          startSprint();
+        } else {
+          pickNextQuestion();
+        }
         renderHeaderStats();
         renderCard();
       });
@@ -956,7 +1471,11 @@
     if (modeSelect) {
       modeSelect.addEventListener("change", () => {
         state.modeFilter = modeSelect.value || "adaptive";
-        pickNextQuestion();
+        if (state.modeFilter === "sprint") {
+          startSprint();
+        } else {
+          pickNextQuestion();
+        }
         renderHeaderStats();
         renderCard();
       });
