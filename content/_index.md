@@ -8,6 +8,7 @@ linkTitle: "Home"
 <p class="fs-5 opacity-75 mb-4">B.Tech — NIT Karnataka, Surathkal</p>
 
 <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+  <!-- Resume button hidden for now
   <div class="resume-pill-btn me-2 mb-2" role="group" aria-label="Résumé formats">
     <a class="resume-pill-main" href="/resume.pdf" target="_blank" rel="noopener" title="View PDF Résumé">
       <i class="fas fa-file-lines me-2"></i>Résumé
@@ -24,6 +25,7 @@ linkTitle: "Home"
       </a>
     </div>
   </div>
+  -->
   <a class="btn btn-lg btn-primary me-2 mb-2" href="https://github.com/sanjeevliv" target="_blank" rel="noopener">
     GitHub <i class="fab fa-github ms-1"></i>
   </a>
