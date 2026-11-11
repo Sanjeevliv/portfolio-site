@@ -75,19 +75,20 @@ linkTitle: "Home"
 
   <div class="card p-4 mb-4 border rounded-3" style="background-color: var(--bg-secondary); border-color: var(--border-color) !important;">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
-      <h3 class="h4 mb-0 font-weight-bold" style="color: var(--text-primary);">Go Systems Foundations</h3>
-      <a class="btn btn-sm btn-outline-primary" href="https://github.com/Sanjeevliv/go-systems-foundations" target="_blank" rel="noopener">
+      <h3 class="h4 mb-0 font-weight-bold" style="color: var(--text-primary);">MyCNI: Kubernetes CNI from Scratch</h3>
+      <a class="btn btn-sm btn-outline-primary" href="https://github.com/Sanjeevliv/mycni" target="_blank" rel="noopener">
         View on GitHub <i class="fab fa-github ms-1"></i>
       </a>
     </div>
     <p class="mb-3" style="color: var(--text-primary);">
-      A collection of low-level Go projects exploring concurrency patterns, custom protocols, network sockets, and systems programming fundamentals.
+      A Kubernetes CNI plugin and node DaemonSet written from scratch in Go. Provisions pod network namespaces with veth interfaces, attaches them to a host Linux bridge (<code>mycni0</code>), discovers per-node subnets, and manages file-locked IPAM with iptables NAT.
     </p>
     <div class="d-flex flex-wrap gap-2">
       <span class="badge bg-dark border text-light py-1 px-2">Go</span>
-      <span class="badge bg-dark border text-light py-1 px-2">Concurrency</span>
-      <span class="badge bg-dark border text-light py-1 px-2">Systems</span>
-      <span class="badge bg-dark border text-light py-1 px-2">Sockets</span>
+      <span class="badge bg-dark border text-light py-1 px-2">Kubernetes</span>
+      <span class="badge bg-dark border text-light py-1 px-2">CNI</span>
+      <span class="badge bg-dark border text-light py-1 px-2">Linux Networking</span>
+      <span class="badge bg-dark border text-light py-1 px-2">IPAM</span>
     </div>
   </div>
 </div>
